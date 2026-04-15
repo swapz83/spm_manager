@@ -11,16 +11,41 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return data;
 }
 
+interface ListParams {
+  state?: string;
+  manager?: string;
+  start_date?: string;
+  end_date?: string;
+  include_sub_orgs?: boolean;
+}
+
+function buildQS(params?: ListParams): string {
+  if (!params) return '';
+  const qs = new URLSearchParams();
+  if (params.state) qs.set('state', params.state);
+  if (params.manager) qs.set('manager', params.manager);
+  if (params.start_date) qs.set('start_date', params.start_date);
+  if (params.end_date) qs.set('end_date', params.end_date);
+  if (params.include_sub_orgs) qs.set('include_sub_orgs', '1');
+  const q = qs.toString();
+  return q ? `?${q}` : '';
+}
+
 export const api = {
+  health: () => request<{ status: string; dataSource: 'servicenow' | 'mock' }>('/health'),
   projects: {
-    list: (state?: string) => request<any[]>(`/projects${state ? `?state=${state}` : ''}`),
+    list: (params?: ListParams) => request<any[]>(`/projects${buildQS(params)}`),
+    search: (q: string) => request<any[]>(`/projects/search?q=${encodeURIComponent(q)}`),
     create: (data: any) => request<any>('/projects', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: any) => request<any>(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: string) => request<void>(`/projects/${id}`, { method: 'DELETE' }),
   },
   people: {
-    list: () => request<any[]>('/people'),
-    get: (id: string) => request<any>(`/people/${id}`),
+    list: (params?: ListParams) => request<any[]>(`/people${buildQS(params)}`),
+    get: (id: string, params?: ListParams) => request<any>(`/people/${id}${buildQS(params)}`),
+  },
+  managers: {
+    list: () => request<any[]>('/managers'),
   },
   assignments: {
     list: (params?: { project?: string; resource?: string }) => {
@@ -31,5 +56,12 @@ export const api = {
     bulkCreate: (data: any) => request<any>('/assignments/bulk', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: any) => request<any>(`/assignments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: string) => request<void>(`/assignments/${id}`, { method: 'DELETE' }),
+  },
+  dashboard: {
+    summary: (params?: ListParams) => request<any>(`/dashboard/summary${buildQS(params)}`),
+  },
+  publish: {
+    preview: (data: any) => request<any>('/publish/preview', { method: 'POST', body: JSON.stringify(data) }),
+    execute: (data: any) => request<any>('/publish', { method: 'POST', body: JSON.stringify(data) }),
   },
 };

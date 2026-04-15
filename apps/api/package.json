@@ -12,14 +12,15 @@
   "dependencies": {
     "@electric-sql/pglite": "^0.2.17",
     "@fastify/cors": "^10.0.0",
+    "@spm/shared": "workspace:*",
+    "dotenv": "^17.4.2",
     "fastify": "^5.2.0",
     "fastify-plugin": "^5.0.0",
-    "zod": "^3.24.0",
-    "@spm/shared": "workspace:*"
+    "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.7.0",
-    "@types/node": "^22.0.0"
+    "typescript": "^5.7.0"
   }
 }

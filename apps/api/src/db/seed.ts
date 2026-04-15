@@ -1,26 +1,37 @@
 import type { PGlite } from '@electric-sql/pglite';
 
+// Manager hierarchy:
+// m001 (Sarah Park) manages: u001-u005, u007, u008, u015, u017
+// m002 (David Foster) manages: u006, u009, u010, u012, u014, u016, u018, u020
+// m003 (Priya Sharma) manages: u003, u004, u011, u013, u019
+
+const managers = [
+  { id: 'm001', user_name: 'spark', first_name: 'Sarah', last_name: 'Park', email: 'sarah.park@company.com', title: 'Engineering Manager', department: 'Engineering', manager: null },
+  { id: 'm002', user_name: 'dfoster', first_name: 'David', last_name: 'Foster', email: 'david.foster@company.com', title: 'Engineering Manager', department: 'Engineering', manager: null },
+  { id: 'm003', user_name: 'psharma', first_name: 'Priya', last_name: 'Sharma', email: 'priya.sharma@company.com', title: 'Design & Product Director', department: 'Design', manager: null },
+];
+
 const users = [
-  { id: 'u001', user_name: 'jchen', first_name: 'Jessica', last_name: 'Chen', email: 'jessica.chen@company.com', title: 'Senior Software Engineer', department: 'Engineering', manager: null },
-  { id: 'u002', user_name: 'mwilliams', first_name: 'Marcus', last_name: 'Williams', email: 'marcus.williams@company.com', title: 'Staff Engineer', department: 'Engineering', manager: null },
-  { id: 'u003', user_name: 'spatel', first_name: 'Sunita', last_name: 'Patel', email: 'sunita.patel@company.com', title: 'UX Designer', department: 'Design', manager: null },
-  { id: 'u004', user_name: 'akim', first_name: 'Alex', last_name: 'Kim', email: 'alex.kim@company.com', title: 'Product Manager', department: 'Product', manager: null },
-  { id: 'u005', user_name: 'rjohnson', first_name: 'Rachel', last_name: 'Johnson', email: 'rachel.johnson@company.com', title: 'QA Engineer', department: 'QA', manager: null },
-  { id: 'u006', user_name: 'dgarcia', first_name: 'Daniel', last_name: 'Garcia', email: 'daniel.garcia@company.com', title: 'DevOps Engineer', department: 'DevOps', manager: null },
-  { id: 'u007', user_name: 'lzhang', first_name: 'Lisa', last_name: 'Zhang', email: 'lisa.zhang@company.com', title: 'Frontend Developer', department: 'Engineering', manager: null },
-  { id: 'u008', user_name: 'toconnor', first_name: 'Thomas', last_name: "O'Connor", email: 'thomas.oconnor@company.com', title: 'Backend Developer', department: 'Engineering', manager: null },
-  { id: 'u009', user_name: 'nsingh', first_name: 'Neha', last_name: 'Singh', email: 'neha.singh@company.com', title: 'Data Scientist', department: 'Engineering', manager: null },
-  { id: 'u010', user_name: 'jmartinez', first_name: 'Juan', last_name: 'Martinez', email: 'juan.martinez@company.com', title: 'Security Engineer', department: 'Engineering', manager: null },
-  { id: 'u011', user_name: 'emiller', first_name: 'Emily', last_name: 'Miller', email: 'emily.miller@company.com', title: 'Technical Writer', department: 'Product', manager: null },
-  { id: 'u012', user_name: 'klee', first_name: 'Kevin', last_name: 'Lee', email: 'kevin.lee@company.com', title: 'Mobile Developer', department: 'Engineering', manager: null },
-  { id: 'u013', user_name: 'abrown', first_name: 'Amanda', last_name: 'Brown', email: 'amanda.brown@company.com', title: 'UI Designer', department: 'Design', manager: null },
-  { id: 'u014', user_name: 'rwilson', first_name: 'Robert', last_name: 'Wilson', email: 'robert.wilson@company.com', title: 'Platform Engineer', department: 'DevOps', manager: null },
-  { id: 'u015', user_name: 'ytanaka', first_name: 'Yuki', last_name: 'Tanaka', email: 'yuki.tanaka@company.com', title: 'Full Stack Developer', department: 'Engineering', manager: null },
-  { id: 'u016', user_name: 'crodriguez', first_name: 'Carlos', last_name: 'Rodriguez', email: 'carlos.rodriguez@company.com', title: 'QA Lead', department: 'QA', manager: null },
-  { id: 'u017', user_name: 'hpham', first_name: 'Hannah', last_name: 'Pham', email: 'hannah.pham@company.com', title: 'Software Engineer', department: 'Engineering', manager: null },
-  { id: 'u018', user_name: 'jthompson', first_name: 'James', last_name: 'Thompson', email: 'james.thompson@company.com', title: 'Architect', department: 'Engineering', manager: null },
-  { id: 'u019', user_name: 'mkowalski', first_name: 'Maria', last_name: 'Kowalski', email: 'maria.kowalski@company.com', title: 'Scrum Master', department: 'Product', manager: null },
-  { id: 'u020', user_name: 'bnguyen', first_name: 'Brian', last_name: 'Nguyen', email: 'brian.nguyen@company.com', title: 'ML Engineer', department: 'Engineering', manager: null },
+  { id: 'u001', user_name: 'jchen', first_name: 'Jessica', last_name: 'Chen', email: 'jessica.chen@company.com', title: 'Senior Software Engineer', department: 'Engineering', manager: 'm001' },
+  { id: 'u002', user_name: 'mwilliams', first_name: 'Marcus', last_name: 'Williams', email: 'marcus.williams@company.com', title: 'Staff Engineer', department: 'Engineering', manager: 'm001' },
+  { id: 'u003', user_name: 'spatel', first_name: 'Sunita', last_name: 'Patel', email: 'sunita.patel@company.com', title: 'UX Designer', department: 'Design', manager: 'm003' },
+  { id: 'u004', user_name: 'akim', first_name: 'Alex', last_name: 'Kim', email: 'alex.kim@company.com', title: 'Product Manager', department: 'Product', manager: 'm003' },
+  { id: 'u005', user_name: 'rjohnson', first_name: 'Rachel', last_name: 'Johnson', email: 'rachel.johnson@company.com', title: 'QA Engineer', department: 'QA', manager: 'm001' },
+  { id: 'u006', user_name: 'dgarcia', first_name: 'Daniel', last_name: 'Garcia', email: 'daniel.garcia@company.com', title: 'DevOps Engineer', department: 'DevOps', manager: 'm002' },
+  { id: 'u007', user_name: 'lzhang', first_name: 'Lisa', last_name: 'Zhang', email: 'lisa.zhang@company.com', title: 'Frontend Developer', department: 'Engineering', manager: 'm001' },
+  { id: 'u008', user_name: 'toconnor', first_name: 'Thomas', last_name: "O'Connor", email: 'thomas.oconnor@company.com', title: 'Backend Developer', department: 'Engineering', manager: 'm001' },
+  { id: 'u009', user_name: 'nsingh', first_name: 'Neha', last_name: 'Singh', email: 'neha.singh@company.com', title: 'Data Scientist', department: 'Engineering', manager: 'm002' },
+  { id: 'u010', user_name: 'jmartinez', first_name: 'Juan', last_name: 'Martinez', email: 'juan.martinez@company.com', title: 'Security Engineer', department: 'Engineering', manager: 'm002' },
+  { id: 'u011', user_name: 'emiller', first_name: 'Emily', last_name: 'Miller', email: 'emily.miller@company.com', title: 'Technical Writer', department: 'Product', manager: 'm003' },
+  { id: 'u012', user_name: 'klee', first_name: 'Kevin', last_name: 'Lee', email: 'kevin.lee@company.com', title: 'Mobile Developer', department: 'Engineering', manager: 'm002' },
+  { id: 'u013', user_name: 'abrown', first_name: 'Amanda', last_name: 'Brown', email: 'amanda.brown@company.com', title: 'UI Designer', department: 'Design', manager: 'm003' },
+  { id: 'u014', user_name: 'rwilson', first_name: 'Robert', last_name: 'Wilson', email: 'robert.wilson@company.com', title: 'Platform Engineer', department: 'DevOps', manager: 'm002' },
+  { id: 'u015', user_name: 'ytanaka', first_name: 'Yuki', last_name: 'Tanaka', email: 'yuki.tanaka@company.com', title: 'Full Stack Developer', department: 'Engineering', manager: 'm001' },
+  { id: 'u016', user_name: 'crodriguez', first_name: 'Carlos', last_name: 'Rodriguez', email: 'carlos.rodriguez@company.com', title: 'QA Lead', department: 'QA', manager: 'm002' },
+  { id: 'u017', user_name: 'hpham', first_name: 'Hannah', last_name: 'Pham', email: 'hannah.pham@company.com', title: 'Software Engineer', department: 'Engineering', manager: 'm001' },
+  { id: 'u018', user_name: 'jthompson', first_name: 'James', last_name: 'Thompson', email: 'james.thompson@company.com', title: 'Architect', department: 'Engineering', manager: 'm002' },
+  { id: 'u019', user_name: 'mkowalski', first_name: 'Maria', last_name: 'Kowalski', email: 'maria.kowalski@company.com', title: 'Scrum Master', department: 'Product', manager: 'm003' },
+  { id: 'u020', user_name: 'bnguyen', first_name: 'Brian', last_name: 'Nguyen', email: 'brian.nguyen@company.com', title: 'ML Engineer', department: 'Engineering', manager: 'm002' },
 ];
 
 const projects = [
@@ -35,54 +46,38 @@ const projects = [
 ];
 
 const assignments = [
-  // Jessica Chen - 100% allocated (3 projects)
   { id: 'a001', resource: 'u001', project: 'p001', allocation_pct: 50, role: 'Tech Lead', status: 'approved' },
   { id: 'a002', resource: 'u001', project: 'p003', allocation_pct: 30, role: 'Developer', status: 'approved' },
   { id: 'a003', resource: 'u001', project: 'p008', allocation_pct: 20, role: 'Advisor', status: 'approved' },
-  // Marcus Williams - 80% allocated (2 projects)
   { id: 'a004', resource: 'u002', project: 'p001', allocation_pct: 50, role: 'Architect', status: 'approved' },
   { id: 'a005', resource: 'u002', project: 'p005', allocation_pct: 30, role: 'Tech Lead', status: 'approved' },
-  // Sunita Patel - 90% allocated (3 projects)
   { id: 'a006', resource: 'u003', project: 'p002', allocation_pct: 50, role: 'Lead Designer', status: 'approved' },
   { id: 'a007', resource: 'u003', project: 'p004', allocation_pct: 25, role: 'UX Consultant', status: 'requested' },
   { id: 'a008', resource: 'u003', project: 'p008', allocation_pct: 15, role: 'Designer', status: 'approved' },
-  // Alex Kim - 75% allocated (2 projects)
   { id: 'a009', resource: 'u004', project: 'p002', allocation_pct: 50, role: 'Product Owner', status: 'approved' },
   { id: 'a010', resource: 'u004', project: 'p004', allocation_pct: 25, role: 'Product Lead', status: 'requested' },
-  // Rachel Johnson - 60% allocated (2 projects)
   { id: 'a011', resource: 'u005', project: 'p001', allocation_pct: 30, role: 'QA Lead', status: 'approved' },
   { id: 'a012', resource: 'u005', project: 'p003', allocation_pct: 30, role: 'QA Engineer', status: 'approved' },
-  // Daniel Garcia - 100% allocated (3 projects)
   { id: 'a013', resource: 'u006', project: 'p001', allocation_pct: 40, role: 'DevOps Lead', status: 'approved' },
   { id: 'a014', resource: 'u006', project: 'p005', allocation_pct: 30, role: 'Infrastructure', status: 'approved' },
   { id: 'a015', resource: 'u006', project: 'p008', allocation_pct: 30, role: 'Platform Engineer', status: 'approved' },
-  // Lisa Zhang - 70% allocated (2 projects)
   { id: 'a016', resource: 'u007', project: 'p002', allocation_pct: 50, role: 'Frontend Lead', status: 'approved' },
   { id: 'a017', resource: 'u007', project: 'p004', allocation_pct: 20, role: 'Frontend Dev', status: 'requested' },
-  // Thomas O'Connor - 80% allocated (2 projects)
   { id: 'a018', resource: 'u008', project: 'p003', allocation_pct: 50, role: 'Backend Lead', status: 'approved' },
   { id: 'a019', resource: 'u008', project: 'p005', allocation_pct: 30, role: 'Developer', status: 'approved' },
-  // Neha Singh - 60% allocated (2 projects)
   { id: 'a020', resource: 'u009', project: 'p005', allocation_pct: 40, role: 'Data Lead', status: 'approved' },
   { id: 'a021', resource: 'u009', project: 'p007', allocation_pct: 20, role: 'ML Advisor', status: 'requested' },
-  // Juan Martinez - 50% allocated (1 project)
   { id: 'a022', resource: 'u010', project: 'p006', allocation_pct: 50, role: 'Security Lead', status: 'approved' },
-  // Kevin Lee - 80% allocated (2 projects)
   { id: 'a024', resource: 'u012', project: 'p002', allocation_pct: 60, role: 'Mobile Lead', status: 'approved' },
   { id: 'a025', resource: 'u012', project: 'p008', allocation_pct: 20, role: 'Mobile Consultant', status: 'approved' },
-  // Amanda Brown - 50% allocated (1 project)
   { id: 'a026', resource: 'u013', project: 'p002', allocation_pct: 30, role: 'Visual Designer', status: 'approved' },
   { id: 'a027', resource: 'u013', project: 'p004', allocation_pct: 20, role: 'UI Designer', status: 'requested' },
-  // Robert Wilson - 90% allocated (3 projects)
   { id: 'a028', resource: 'u014', project: 'p001', allocation_pct: 30, role: 'Platform Engineer', status: 'approved' },
   { id: 'a029', resource: 'u014', project: 'p005', allocation_pct: 30, role: 'Infrastructure', status: 'approved' },
   { id: 'a030', resource: 'u014', project: 'p008', allocation_pct: 30, role: 'Platform Lead', status: 'approved' },
-  // Yuki Tanaka - 70% allocated (2 projects)
   { id: 'a031', resource: 'u015', project: 'p003', allocation_pct: 40, role: 'Full Stack Dev', status: 'approved' },
   { id: 'a032', resource: 'u015', project: 'p008', allocation_pct: 30, role: 'Developer', status: 'approved' },
-  // Carlos Rodriguez - 40% allocated (1 project)
   { id: 'a033', resource: 'u016', project: 'p006', allocation_pct: 40, role: 'QA Lead', status: 'approved' },
-  // Brian Nguyen - 40% allocated (1 project)
   { id: 'a035', resource: 'u020', project: 'p007', allocation_pct: 40, role: 'ML Engineer', status: 'requested' },
 ];
 
@@ -90,6 +85,17 @@ export async function seed(db: PGlite) {
   const existing = await db.query('SELECT COUNT(*) as cnt FROM sys_user');
   if (Number((existing.rows[0] as any).cnt) > 0) return;
 
+  // Insert managers first (they have no manager reference)
+  for (const m of managers) {
+    const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(m.first_name + ' ' + m.last_name)}&background=random&size=128`;
+    await db.query(
+      `INSERT INTO sys_user (sys_id, user_name, first_name, last_name, email, title, department, manager, avatar_url)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      [m.id, m.user_name, m.first_name, m.last_name, m.email, m.title, m.department, m.manager, avatar]
+    );
+  }
+
+  // Insert users with manager references
   for (const u of users) {
     const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.first_name + ' ' + u.last_name)}&background=random&size=128`;
     await db.query(

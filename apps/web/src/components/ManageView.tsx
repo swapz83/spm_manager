@@ -1,0 +1,474 @@
+'use client';
+import { useState, useCallback, useMemo } from 'react';
+import {
+  DndContext, DragOverlay, PointerSensor, useSensor, useSensors,
+  type DragStartEvent, type DragEndEvent,
+} from '@dnd-kit/core';
+import { ProjectCard } from '@/components/ProjectCard';
+import { PersonChip, PersonChipOverlay } from '@/components/PersonChip';
+import { AllocationDialog } from '@/components/AllocationDialog';
+import { AddProjectDialog } from '@/components/AddProjectDialog';
+import { ReviewView } from '@/components/ReviewView';
+import { useProjects } from '@/hooks/useProjects';
+import { usePeople, useManagers } from '@/hooks/usePeople';
+import { useCreateAssignment } from '@/hooks/useAssignments';
+import { Plus, Search, Users, Eye, SlidersHorizontal, XCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useFilters } from '@/lib/filters';
+
+export interface PendingChange {
+  id: string;
+  resource_id: string;
+  resource_email: string;
+  resource_name: string;
+  project_id: string;
+  project_number: string;
+  project_name: string;
+  project_color: string;
+  allocation_pct: number;
+  start_date: string;
+  end_date: string;
+  type: 'add' | 'end_early' | 'unassign';
+  /** For end_early / unassign: the original assignment sys_id being terminated or removed */
+  original_sys_id?: string;
+  /** For end_early: the new end date being set */
+  new_end_date?: string;
+}
+
+function getDefaultStartDate(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+}
+
+function getDefaultEndDate(): string {
+  return `${new Date().getFullYear()}-12-31`;
+}
+
+export function ManageView() {
+  // ── Shared filter state (persists across tabs) ──
+  const { applied, draft, setDraft, apply, changed } = useFilters();
+  const draftManager = draft.manager;
+  const draftStartDate = draft.startDate;
+  const draftEndDate = draft.endDate;
+  const appliedManager = applied.manager;
+  const appliedStartDate = applied.startDate;
+  const appliedEndDate = applied.endDate;
+  const setDraftManager = (v: string) => setDraft({ manager: v });
+  const setDraftStartDate = (v: string) => setDraft({ startDate: v });
+  const setDraftEndDate = (v: string) => setDraft({ endDate: v });
+  const hasApplied = true; // filters are always considered "applied" — queries run on mount
+
+  // ── Selection & UI state ──
+  const [selectedPeople, setSelectedPeople] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activePerson, setActivePerson] = useState<any>(null);
+  const [pendingDrop, setPendingDrop] = useState<{ people: any[]; project: any } | null>(null);
+  const [showAddProject, setShowAddProject] = useState(false);
+  /** Projects explicitly added via ServiceNow search — pinned so they show regardless of filters */
+  const [pinnedProjects, setPinnedProjects] = useState<any[]>([]);
+  const [pendingChanges, setPendingChanges] = useState<PendingChange[]>([]);
+  const [showReview, setShowReview] = useState(false);
+
+  // ── Data fetching ──
+  const { data: managers } = useManagers();
+  const { data: projects, isLoading: loadingProjects } = useProjects(
+    appliedManager || undefined,
+    appliedStartDate,
+    appliedEndDate,
+    applied.includeSubOrgs,
+  );
+  const { data: people, isLoading: loadingPeople } = usePeople(
+    hasApplied ? (appliedManager || undefined) : undefined,
+    hasApplied ? appliedStartDate : undefined,
+    hasApplied ? appliedEndDate : undefined,
+    hasApplied ? applied.includeSubOrgs : undefined,
+  );
+  const createAssignment = useCreateAssignment();
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+  // ── Filter actions ──
+  const handleApplyFilters = useCallback(() => {
+    apply();
+    setSelectedPeople(new Set());
+  }, [apply]);
+
+  const filtersChanged = changed;
+
+  // ── Selection actions ──
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedPeople(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => setSelectedPeople(new Set()), []);
+
+  // ── Merge pinned (just-added) projects into the filtered list ──
+  const allProjects = useMemo(() => {
+    const base = projects || [];
+    const baseIds = new Set(base.map((p: any) => p.sys_id));
+    const extras = pinnedProjects.filter(p => !baseIds.has(p.sys_id));
+    return [...base, ...extras];
+  }, [projects, pinnedProjects]);
+
+  // ── Merge pending changes into data ──
+  const projectsWithPending = useMemo(() => {
+    return allProjects.map((p: any) => {
+      const pending = pendingChanges
+        .filter(c => c.project_id === p.sys_id && c.type === 'add')
+        .map(c => ({
+          sys_id: c.id,
+          resource: c.resource_id,
+          resource_name: c.resource_name,
+          allocation_pct: c.allocation_pct,
+          start_date: c.start_date,
+          end_date: c.end_date,
+          role: null,
+          resource_status: 'pending',
+          isPending: true,
+        }));
+      return { ...p, assignments: [...(p.assignments || []), ...pending] };
+    });
+  }, [allProjects, pendingChanges]);
+
+  const filteredPeople = useMemo(() => {
+    if (!people) return [];
+    return people.filter((p: any) => {
+      if (searchQuery === '') return true;
+      return `${p.first_name} ${p.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.title?.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+  }, [people, searchQuery]);
+
+  // ── Drag-and-drop ──
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const person = event.active.data.current?.person;
+    if (person) setActivePerson(person);
+  }, []);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    setActivePerson(null);
+    const { active, over } = event;
+    if (!over) return;
+    const draggedPerson = active.data.current?.person;
+    const project = over.data.current?.project;
+    if (!draggedPerson || !project) return;
+
+    // Collect people to assign: if dragged person is in selection, use entire selection;
+    // otherwise just the dragged person
+    let peoplToAssign: any[];
+    if (selectedPeople.has(draggedPerson.sys_id) && selectedPeople.size > 0) {
+      peoplToAssign = (people || []).filter((p: any) => selectedPeople.has(p.sys_id));
+    } else {
+      peoplToAssign = [draggedPerson];
+    }
+
+    // Filter out people already assigned or pending for this project
+    peoplToAssign = peoplToAssign.filter((p: any) => {
+      const alreadyAssigned = project.assignments?.some((a: any) => a.resource === p.sys_id);
+      const alreadyPending = pendingChanges.some(c => c.resource_id === p.sys_id && c.project_id === project.sys_id && c.type === 'add');
+      return !alreadyAssigned && !alreadyPending;
+    });
+
+    if (peoplToAssign.length === 0) return;
+    setPendingDrop({ people: peoplToAssign, project });
+  }, [selectedPeople, people, pendingChanges]);
+
+  // ── Confirm allocation (with optional conflict clearing) ──
+  const handleConfirmAllocation = useCallback((allocation: number, startDate: string, endDate: string, clearConflicts: boolean) => {
+    if (!pendingDrop) return;
+
+    const newChanges: PendingChange[] = [];
+    const dayBefore = new Date(startDate);
+    dayBefore.setDate(dayBefore.getDate() - 1);
+    const dayBeforeStr = dayBefore.toISOString().split('T')[0];
+
+    for (const person of pendingDrop.people) {
+      // Add the new assignment
+      newChanges.push({
+        id: `pending-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        resource_id: person.sys_id,
+        resource_email: person.email,
+        resource_name: `${person.first_name} ${person.last_name}`,
+        project_id: pendingDrop.project.sys_id,
+        project_number: pendingDrop.project.number,
+        project_name: pendingDrop.project.short_description,
+        project_color: pendingDrop.project.color || '#94a3b8',
+        allocation_pct: allocation,
+        start_date: startDate,
+        end_date: endDate,
+        type: 'add',
+      });
+
+      // If clearing conflicts, end-date overlapping assignments
+      if (clearConflicts) {
+        for (const a of (person.assignments || [])) {
+          if (a.project === pendingDrop.project.sys_id) continue;
+          if (a.isPending || a.resource_status === 'pending') continue;
+          const aStart = a.start_date ? new Date(a.start_date) : null;
+          const aEnd = a.end_date ? new Date(a.end_date) : null;
+          const newStart = new Date(startDate);
+          const newEnd = new Date(endDate);
+          const overlaps = (!aStart || aStart <= newEnd) && (!aEnd || aEnd >= newStart);
+          if (overlaps) {
+            // If the existing assignment starts on/after the new start date, it
+            // has nothing to preserve — fully unassign (delete) instead of
+            // ending it early (which would produce end < start).
+            const startsBeforeNew = aStart && aStart < new Date(startDate);
+            if (startsBeforeNew) {
+              newChanges.push({
+                id: `end-early-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                resource_id: person.sys_id,
+                resource_email: person.email,
+                resource_name: `${person.first_name} ${person.last_name}`,
+                project_id: a.project,
+                project_number: a.project_number || '',
+                project_name: a.project_name || '(unknown)',
+                project_color: a.project_color || '#94a3b8',
+                allocation_pct: a.allocation_pct,
+                start_date: a.start_date || '',
+                end_date: dayBeforeStr,
+                type: 'end_early',
+                original_sys_id: a.sys_id,
+                new_end_date: dayBeforeStr,
+              });
+            } else {
+              newChanges.push({
+                id: `unassign-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                resource_id: person.sys_id,
+                resource_email: person.email,
+                resource_name: `${person.first_name} ${person.last_name}`,
+                project_id: a.project,
+                project_number: a.project_number || '',
+                project_name: a.project_name || '(unknown)',
+                project_color: a.project_color || '#94a3b8',
+                allocation_pct: a.allocation_pct,
+                start_date: a.start_date || '',
+                end_date: a.end_date || '',
+                type: 'unassign',
+                original_sys_id: a.sys_id,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    setPendingChanges(prev => [...prev, ...newChanges]);
+    setPendingDrop(null);
+    // Clear selection after assignment
+    setSelectedPeople(new Set());
+  }, [pendingDrop]);
+
+  const removePendingChange = useCallback((id: string) => {
+    setPendingChanges(prev => prev.filter(c => c.id !== id));
+  }, []);
+
+  // ── Review view ──
+  if (showReview) {
+    return (
+      <ReviewView
+        changes={pendingChanges}
+        startDate={appliedStartDate}
+        endDate={appliedEndDate}
+        onBack={() => setShowReview(false)}
+        onRemoveChange={removePendingChange}
+        onPublished={() => { setPendingChanges([]); setShowReview(false); }}
+      />
+    );
+  }
+
+  const isLoading = hasApplied && (loadingProjects || loadingPeople);
+  const addCount = pendingChanges.filter(c => c.type === 'add').length;
+  const endEarlyCount = pendingChanges.filter(c => c.type === 'end_early').length;
+  const totalPending = pendingChanges.length;
+
+  return (
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="max-w-[1600px] mx-auto px-6 py-6">
+
+        {/* ── Filter Card ── */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <SlidersHorizontal className="w-4 h-4 text-slate-500" />
+            <h3 className="text-sm font-semibold text-slate-700">Filters</h3>
+          </div>
+          <div className="flex items-end gap-4 flex-wrap">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-500">Manager / Team</label>
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-slate-400" />
+                <select
+                  value={draftManager}
+                  onChange={e => setDraftManager(e.target.value)}
+                  className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white min-w-[220px]"
+                >
+                  <option value="">All People</option>
+                  {managers?.map((m: any) => (
+                    <option key={m.sys_id} value={m.sys_id}>
+                      {m.first_name} {m.last_name}&rsquo;s team ({m.direct_report_count})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <label className={cn(
+                'flex items-center gap-1.5 mt-1 text-xs select-none',
+                draftManager ? 'text-slate-600 cursor-pointer' : 'text-slate-300 cursor-not-allowed'
+              )}>
+                <input
+                  type="checkbox"
+                  checked={draft.includeSubOrgs}
+                  disabled={!draftManager}
+                  onChange={e => setDraft({ includeSubOrgs: e.target.checked })}
+                  className="rounded border-slate-300"
+                />
+                Include sub-orgs
+              </label>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-500">Start Date</label>
+              <input type="date" value={draftStartDate} onChange={e => setDraftStartDate(e.target.value)}
+                className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-500">End Date</label>
+              <input type="date" value={draftEndDate} onChange={e => setDraftEndDate(e.target.value)}
+                className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+            </div>
+            <button onClick={handleApplyFilters}
+              className={cn('px-6 py-2 rounded-xl text-sm font-medium transition-colors shadow-sm',
+                filtersChanged ? 'bg-amber-500 text-white hover:bg-amber-600 ring-2 ring-amber-200' : 'bg-blue-600 text-white hover:bg-blue-700')}>
+              {hasApplied ? (filtersChanged ? 'Re-apply' : 'Applied') : 'Apply'}
+            </button>
+
+            <div className="flex-1" />
+
+            {totalPending > 0 && (
+              <div className="flex items-center gap-3">
+                <div className="text-sm text-slate-500">
+                  <span className="font-bold text-blue-600">{addCount}</span> add
+                  {endEarlyCount > 0 && <>, <span className="font-bold text-amber-600">{endEarlyCount}</span> end</>}
+                </div>
+                <button onClick={() => setShowReview(true)}
+                  className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
+                  <Eye className="w-4 h-4" /> Review
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Pre-apply placeholder ── */}
+        {!hasApplied && (
+          <div className="flex items-center justify-center h-64 text-slate-400">
+            <div className="text-center">
+              <SlidersHorizontal className="w-10 h-10 mx-auto mb-3 opacity-40" />
+              <p className="text-sm font-medium">Select a manager and date range, then click Apply</p>
+            </div>
+          </div>
+        )}
+
+        {isLoading && (
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full" />
+          </div>
+        )}
+
+        {/* ── Main content ── */}
+        {hasApplied && !isLoading && (
+          <div className="flex gap-6">
+            {/* Project Board */}
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-lg font-semibold text-slate-800">
+                  Projects <span className="text-sm font-normal text-slate-400">({projects?.length || 0})</span>
+                </h2>
+                <button onClick={() => setShowAddProject(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
+                  <Plus className="w-4 h-4" /> Add Project
+                </button>
+              </div>
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                {projectsWithPending.map((project: any) => (
+                  <ProjectCard key={project.sys_id} project={project} onRemovePending={removePendingChange} />
+                ))}
+              </div>
+            </div>
+
+            {/* People Sidebar */}
+            <div className="w-72 flex-shrink-0">
+              <div className="sticky top-20">
+                {/* Header with selection count & clear */}
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-slate-800">
+                    People <span className="text-sm font-normal text-slate-400">({filteredPeople.length})</span>
+                  </h2>
+                  {selectedPeople.size > 0 && (
+                    <button onClick={clearSelection}
+                      className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                      <XCircle className="w-3.5 h-3.5" />
+                      Clear ({selectedPeople.size})
+                    </button>
+                  )}
+                </div>
+
+                {/* Selection banner */}
+                {selectedPeople.size > 0 && (
+                  <div className="mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-700">
+                    <strong>{selectedPeople.size}</strong> selected &mdash; drag any selected person onto a project to assign all
+                  </div>
+                )}
+
+                <div className="relative mb-4">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input type="text" placeholder="Search people..." value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white" />
+                </div>
+
+                <div className="space-y-2 max-h-[calc(100vh-320px)] overflow-y-auto pr-1">
+                  {filteredPeople.map((person: any) => (
+                    <PersonChip
+                      key={person.sys_id}
+                      person={person}
+                      compact
+                      isSelected={selectedPeople.has(person.sys_id)}
+                      onToggleSelect={toggleSelect}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <DragOverlay>
+        {activePerson ? <PersonChipOverlay person={activePerson} /> : null}
+      </DragOverlay>
+
+      {pendingDrop && (
+        <AllocationDialog
+          people={pendingDrop.people}
+          project={pendingDrop.project}
+          defaultStartDate={getDefaultStartDate()}
+          defaultEndDate={getDefaultEndDate()}
+          onConfirm={handleConfirmAllocation}
+          onCancel={() => setPendingDrop(null)}
+        />
+      )}
+
+      {showAddProject && (
+        <AddProjectDialog
+          onClose={() => setShowAddProject(false)}
+          onAdded={(project) => setPinnedProjects(prev => [
+            ...prev.filter(p => p.sys_id !== project.sys_id),
+            { ...project, assignments: [] },
+          ])}
+        />
+      )}
+    </DndContext>
+  );
+}

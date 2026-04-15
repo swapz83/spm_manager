@@ -1,140 +1,197 @@
 'use client';
-import { useState } from 'react';
-import { X } from 'lucide-react';
-import { useCreateProject } from '@/hooks/useProjects';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { X, Search, Loader2, ExternalLink, FolderPlus } from 'lucide-react';
+import { api } from '@/lib/api';
+import { useQueryClient } from '@tanstack/react-query';
 
-const COLORS = ['#3B82F6','#8B5CF6','#10B981','#F59E0B','#EF4444','#EC4899','#14B8A6','#6366F1','#0EA5E9','#D946EF'];
+interface SearchResult {
+  sys_id: string;
+  number: string;
+  short_description: string;
+  description?: string;
+  state: string;
+  start_date?: string;
+  end_date?: string;
+  color?: string;
+  source?: 'servicenow';
+}
 
 interface AddProjectDialogProps {
   onClose: () => void;
+  onAdded?: (project: SearchResult) => void;
 }
 
-export function AddProjectDialog({ onClose }: AddProjectDialogProps) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [state, setState] = useState('planning');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [color, setColor] = useState(COLORS[0]);
-  const createProject = useCreateProject();
+const STATE_BADGES: Record<string, { label: string; className: string }> = {
+  planning: { label: 'Planning', className: 'bg-amber-100 text-amber-700' },
+  active:   { label: 'Active',   className: 'bg-green-100 text-green-700' },
+  closed:   { label: 'Closed',   className: 'bg-slate-100 text-slate-500' },
+};
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-    await createProject.mutateAsync({
-      short_description: name,
-      description: description || undefined,
-      state,
-      start_date: startDate || undefined,
-      end_date: endDate || undefined,
-      color,
-    });
-    onClose();
+export function AddProjectDialog({ onClose, onAdded }: AddProjectDialogProps) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [adding, setAdding] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const qc = useQueryClient();
+
+  // Debounced search
+  const doSearch = useCallback(async (term: string) => {
+    if (term.trim().length < 2) {
+      setResults([]);
+      setHasSearched(false);
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const data = await api.projects.search(term);
+      setResults(data);
+      setHasSearched(true);
+    } catch (err) {
+      console.error('Project search failed:', err);
+      setResults([]);
+      setHasSearched(true);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => doSearch(query), 350);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [query, doSearch]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const handleSelect = async (project: SearchResult) => {
+    setAdding(project.sys_id);
+    try {
+      // The search endpoint already upserts SN projects into PGlite.
+      // Notify parent so it can pin the project into the visible list (filters may exclude it otherwise),
+      // then invalidate queries to refresh.
+      onAdded?.(project);
+      await qc.invalidateQueries({ queryKey: ['projects'] });
+      onClose();
+    } finally {
+      setAdding(null);
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
-        <form onSubmit={handleSubmit}>
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-slate-900">New Project</h3>
-              <button type="button" onClick={onClose} className="p-1 hover:bg-slate-100 rounded-lg transition-colors">
-                <X className="w-5 h-5 text-slate-400" />
-              </button>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="p-6 pb-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900">Add Project from ServiceNow</h3>
+            <button type="button" onClick={onClose} className="p-1 hover:bg-slate-100 rounded-lg transition-colors">
+              <X className="w-5 h-5 text-slate-400" />
+            </button>
+          </div>
+
+          {/* Search Input */}
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search by project number (PRJ...) or name..."
+              className="w-full pl-11 pr-10 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-slate-50"
+            />
+            {isSearching && (
+              <Loader2 className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-blue-500 animate-spin" />
+            )}
+          </div>
+        </div>
+
+        {/* Results */}
+        <div className="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
+          {!hasSearched && !isSearching && (
+            <div className="text-center py-12 text-slate-400">
+              <Search className="w-10 h-10 mx-auto mb-3 opacity-40" />
+              <p className="text-sm">Type at least 2 characters to search ServiceNow projects</p>
+              <p className="text-xs mt-1 text-slate-300">Search by PRJ number or project name</p>
             </div>
+          )}
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Project Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder="e.g., Cloud Migration Phase 3"
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  autoFocus
-                />
-              </div>
+          {hasSearched && results.length === 0 && !isSearching && (
+            <div className="text-center py-12 text-slate-400">
+              <FolderPlus className="w-10 h-10 mx-auto mb-3 opacity-40" />
+              <p className="text-sm">No projects found for &ldquo;{query}&rdquo;</p>
+              <p className="text-xs mt-1 text-slate-300">Try a different project number or name</p>
+            </div>
+          )}
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                <textarea
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  placeholder="Brief project description..."
-                  rows={2}
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">State</label>
-                  <select
-                    value={state}
-                    onChange={e => setState(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          {results.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3">
+                {results.length} project{results.length !== 1 ? 's' : ''} found
+              </p>
+              {results.map(project => {
+                const badge = STATE_BADGES[project.state] || STATE_BADGES.planning;
+                return (
+                  <button
+                    key={project.sys_id}
+                    onClick={() => handleSelect(project)}
+                    disabled={adding === project.sys_id}
+                    className="w-full text-left p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all group disabled:opacity-60"
                   >
-                    <option value="planning">Planning</option>
-                    <option value="active">Active</option>
-                    <option value="closed">Closed</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Start Date</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={e => setStartDate(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">End Date</label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={e => setEndDate(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
+                    <div className="flex items-start gap-3">
+                      {/* Color dot */}
+                      <div className="w-3 h-3 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: project.color || '#94a3b8' }} />
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Color</label>
-                <div className="flex gap-2">
-                  {COLORS.map(c => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setColor(c)}
-                      className={`w-8 h-8 rounded-full transition-all ${color === c ? 'ring-2 ring-offset-2 ring-blue-500 scale-110' : 'hover:scale-105'}`}
-                      style={{ backgroundColor: c }}
-                    />
-                  ))}
-                </div>
-              </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-mono font-medium text-slate-500">{project.number}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badge.className}`}>
+                            {badge.label}
+                          </span>
+                          {project.source === 'servicenow' && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium flex items-center gap-1">
+                              <ExternalLink className="w-3 h-3" />
+                              SN
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm font-medium text-slate-800 truncate">
+                          {project.short_description}
+                        </p>
+                        {project.description && (
+                          <p className="text-xs text-slate-400 mt-1 line-clamp-2">
+                            {project.description}
+                          </p>
+                        )}
+                        {(project.start_date || project.end_date) && (
+                          <p className="text-xs text-slate-400 mt-1.5">
+                            {project.start_date?.split('T')[0]?.split(' ')[0]} &mdash; {project.end_date?.split('T')[0]?.split(' ')[0]}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Add indicator */}
+                      <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {adding === project.sys_id ? (
+                          <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                        ) : (
+                          <span className="text-xs font-medium text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg">
+                            Add
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
-          </div>
-
-          <div className="px-6 py-4 bg-slate-50 flex gap-3 justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-white transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!name.trim() || createProject.isPending}
-              className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
-            >
-              {createProject.isPending ? 'Creating...' : 'Create Project'}
-            </button>
-          </div>
-        </form>
+          )}
+        </div>
       </div>
     </div>
   );

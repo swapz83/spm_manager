@@ -1,14 +1,22 @@
 'use client';
 import { useDroppable } from '@dnd-kit/core';
-import { cn, getInitials } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { X, Users, Calendar } from 'lucide-react';
 import { useDeleteAssignment } from '@/hooks/useAssignments';
 
-interface ProjectCardProps {
-  project: any;
+function formatDate(d: string | null | undefined): string {
+  if (!d) return '—';
+  try {
+    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+  } catch { return '—'; }
 }
 
-export function ProjectCard({ project }: ProjectCardProps) {
+interface ProjectCardProps {
+  project: any;
+  onRemovePending?: (id: string) => void;
+}
+
+export function ProjectCard({ project, onRemovePending }: ProjectCardProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `project-${project.sys_id}`,
     data: { type: 'project', project },
@@ -27,13 +35,14 @@ export function ProjectCard({ project }: ProjectCardProps) {
     >
       <div className="h-1.5" style={{ backgroundColor: project.color || '#94a3b8' }} />
       <div className="p-5">
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <h3 className="font-semibold text-slate-900 text-base">{project.short_description}</h3>
+        {/* Header */}
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-slate-900 text-base truncate">{project.short_description}</h3>
             <span className="text-xs text-slate-400 font-mono">{project.number}</span>
           </div>
           <span className={cn(
-            'text-xs font-medium px-2.5 py-1 rounded-full',
+            'text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ml-2',
             project.state === 'active' && 'bg-emerald-100 text-emerald-700',
             project.state === 'planning' && 'bg-amber-100 text-amber-700',
             project.state === 'closed' && 'bg-slate-100 text-slate-500',
@@ -42,58 +51,106 @@ export function ProjectCard({ project }: ProjectCardProps) {
           </span>
         </div>
 
-        {(project.start_date || project.end_date) && (
-          <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-4">
-            <Calendar className="w-3.5 h-3.5" />
-            {project.start_date && new Date(project.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            {project.start_date && project.end_date && ' - '}
-            {project.end_date && new Date(project.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+        {/* Project dates & member count */}
+        <div className="flex items-center gap-4 text-xs text-slate-400 mb-4">
+          {(project.start_date || project.end_date) && (
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {formatDate(project.start_date)} &ndash; {formatDate(project.end_date)}
+            </span>
+          )}
+          <span className="flex items-center gap-1">
+            <Users className="w-3 h-3" />
+            {assignments.length}
+          </span>
+        </div>
+
+        {/* Assignments table */}
+        {assignments.length > 0 && (
+          <div className="border border-slate-100 rounded-xl overflow-hidden">
+            {/* Table header */}
+            <div className="grid grid-cols-[1fr_60px_auto_auto_28px] gap-1 px-3 py-1.5 bg-slate-50 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+              <span>Person</span>
+              <span className="text-center">FTE</span>
+              <span className="text-center">From</span>
+              <span className="text-center">To</span>
+              <span></span>
+            </div>
+            {/* Assignment rows */}
+            {assignments.map((a: any) => {
+              const isPending = a.isPending || a.resource_status === 'pending';
+              return (
+                <div
+                  key={a.sys_id}
+                  className={cn(
+                    'grid grid-cols-[1fr_60px_auto_auto_28px] gap-1 items-center px-3 py-2 group transition-colors border-t border-slate-100',
+                    isPending ? 'bg-blue-50/60' : 'hover:bg-slate-50'
+                  )}
+                >
+                  {/* Person */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[9px] font-semibold flex-shrink-0"
+                      style={{ backgroundColor: stringToColor(a.resource_name || '') }}
+                    >
+                      {(a.resource_name || '').split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                    </div>
+                    <span className="text-sm text-slate-700 truncate">
+                      {a.resource_name}
+                      {isPending && <span className="ml-1 text-[10px] text-blue-500">(new)</span>}
+                    </span>
+                  </div>
+                  {/* Allocation */}
+                  <span className={cn(
+                    'text-xs font-semibold text-center px-1.5 py-0.5 rounded-md border',
+                    isPending
+                      ? 'text-blue-600 bg-blue-100 border-blue-200'
+                      : 'text-slate-600 bg-white border-slate-200'
+                  )}>
+                    {a.allocation_pct}%
+                  </span>
+                  {/* Start */}
+                  <span className="text-[11px] text-slate-500 text-center whitespace-nowrap px-1">
+                    {formatDate(a.start_date)}
+                  </span>
+                  {/* End */}
+                  <span className="text-[11px] text-slate-500 text-center whitespace-nowrap px-1">
+                    {formatDate(a.end_date)}
+                  </span>
+                  {/* Remove */}
+                  <button
+                    onClick={() => {
+                      if (isPending && onRemovePending) {
+                        onRemovePending(a.sys_id);
+                      } else if (!isPending) {
+                        deleteAssignment.mutate(a.sys_id);
+                      }
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-red-100 rounded transition-all"
+                  >
+                    <X className="w-3 h-3 text-red-500" />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
 
-        <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-3">
-          <Users className="w-3.5 h-3.5" />
-          <span>{assignments.length} member{assignments.length !== 1 ? 's' : ''}</span>
-        </div>
+        {/* Empty / drop target */}
+        {assignments.length === 0 && (
+          <div className={cn(
+            'flex items-center justify-center py-8 text-sm rounded-xl border-2 border-dashed transition-colors',
+            isOver ? 'border-blue-300 text-blue-500 bg-blue-50' : 'border-slate-200 text-slate-400'
+          )}>
+            {isOver ? 'Drop to assign' : 'Drag people here'}
+          </div>
+        )}
 
-        <div className="space-y-2">
-          {assignments.map((a: any) => (
-            <div key={a.sys_id} className="flex items-center gap-2 p-2 rounded-lg bg-slate-50 group hover:bg-slate-100 transition-colors">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-semibold flex-shrink-0"
-                style={{ backgroundColor: stringToColor(a.resource_name) }}>
-                {a.resource_name?.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-slate-700 truncate">{a.resource_name}</div>
-                {a.role && <div className="text-[10px] text-slate-400">{a.role}</div>}
-              </div>
-              <span className="text-xs font-semibold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200">
-                {a.allocation_pct}%
-              </span>
-              <button
-                onClick={() => deleteAssignment.mutate(a.sys_id)}
-                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded-md transition-all"
-              >
-                <X className="w-3 h-3 text-red-500" />
-              </button>
-            </div>
-          ))}
-
-          {assignments.length === 0 && (
-            <div className={cn(
-              'flex items-center justify-center py-8 text-sm rounded-xl border-2 border-dashed transition-colors',
-              isOver ? 'border-blue-300 text-blue-500 bg-blue-50' : 'border-slate-200 text-slate-400'
-            )}>
-              {isOver ? 'Drop to assign' : 'Drag people here'}
-            </div>
-          )}
-
-          {assignments.length > 0 && isOver && (
-            <div className="flex items-center justify-center py-3 text-xs text-blue-500 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50">
-              Drop to assign
-            </div>
-          )}
-        </div>
+        {assignments.length > 0 && isOver && (
+          <div className="flex items-center justify-center py-3 mt-2 text-xs text-blue-500 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50">
+            Drop to assign
+          </div>
+        )}
       </div>
     </div>
   );

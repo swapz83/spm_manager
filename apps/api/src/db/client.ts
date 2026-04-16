@@ -36,8 +36,16 @@ export async function getDb(): Promise<PGlite> {
       const ok = await sn.testConnection();
 
       if (ok) {
-        console.log('[DB] ServiceNow connection OK — syncing live data...');
+        console.log('[DB] ServiceNow connection OK — clearing stale data before sync...');
         try {
+          // Truncate SN-synced tables so deleted/changed records don't linger.
+          // Mock seed data will re-populate if SN sync fails below.
+          await db.exec(`
+            TRUNCATE sn_plng_att_core_resource_assignment;
+            TRUNCATE pm_project;
+            TRUNCATE sys_user;
+          `);
+          console.log('[DB] Tables cleared — syncing live data...');
           await syncFromServiceNow(db, sn, userEmail);
           console.log('[DB] Live data loaded from ServiceNow');
           snConnected = true;

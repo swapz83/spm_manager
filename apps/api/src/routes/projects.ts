@@ -4,7 +4,35 @@ import { pickColor } from '../servicenow/sync.js';
 
 export async function projectRoutes(fastify: FastifyInstance) {
 
+  // Shared state-code mapping used by both search and import.
+  const SN_STATE_MAP: Record<string, string> = {
+    '-5': 'planning', 'pending': 'planning',
+    '1': 'active', 'open': 'active', 'work_in_progress': 'active', 'work in progress': 'active',
+    '2': 'active',
+    '3': 'closed', 'closed': 'closed', 'complete': 'closed', 'cancelled': 'closed',
+  };
+
+  function normalizeSnProject(p: any) {
+    const pmRef = p.project_manager;
+    const pmId = typeof pmRef === 'object' && pmRef ? pmRef.value : (pmRef || null);
+    const state = SN_STATE_MAP[String(p.state)?.toLowerCase()] || (p.state ? 'active' : 'planning');
+    const color = pickColor(p.number || p.sys_id);
+    return {
+      sys_id: p.sys_id,
+      number: p.number,
+      short_description: p.short_description || '(untitled)',
+      description: p.description || null,
+      state,
+      start_date: p.start_date || null,
+      end_date: p.end_date || null,
+      project_manager: pmId,
+      color,
+    };
+  }
+
   // ── Search ServiceNow for projects by number or name ─────────────────
+  // Read-only: does NOT import results into PGlite. Callers import explicitly
+  // via POST /api/v1/projects/import once the user picks a specific result.
   fastify.get('/api/v1/projects/search', async (req, reply) => {
     const { q } = req.query as { q?: string };
     if (!q || q.trim().length < 2) {
@@ -24,11 +52,11 @@ export async function projectRoutes(fastify: FastifyInstance) {
     );
     const localProjects = localResult.rows as any[];
 
-    // If ServiceNow is connected, also search there for projects not yet in local DB
+    // If ServiceNow is connected, also search there and merge in any
+    // projects not already present locally. We do NOT upsert into PGlite here —
+    // that only happens when the user explicitly picks a result.
     if (fastify.snClient) {
       try {
-        // Search by number OR short_description using SN encoded query
-        // numberLIKEterm^ORshort_descriptionLIKEterm
         const snProjects = await fastify.snClient.query<{
           sys_id: string; number: string; short_description: string; description: string;
           state: string; start_date: string; end_date: string;
@@ -40,49 +68,10 @@ export async function projectRoutes(fastify: FastifyInstance) {
           limit: 20,
         });
 
-        // Upsert any SN results into local DB so they're available for assignments
         const localIds = new Set(localProjects.map((p: any) => p.sys_id));
-
-        const stateMap: Record<string, string> = {
-          '-5': 'planning', 'pending': 'planning',
-          '1': 'active', 'open': 'active', 'work_in_progress': 'active', 'work in progress': 'active',
-          '2': 'active',
-          '3': 'closed', 'closed': 'closed', 'complete': 'closed', 'cancelled': 'closed',
-        };
-
         for (const p of snProjects) {
-          const pmRef = p.project_manager;
-          const pmId = typeof pmRef === 'object' && pmRef ? pmRef.value : (pmRef || null);
-          const state = stateMap[String(p.state)?.toLowerCase()] || (p.state ? 'active' : 'planning');
-          const color = pickColor(p.number || p.sys_id);
-
-          // Upsert into local DB
-          await fastify.db.query(
-            `INSERT INTO pm_project (sys_id, number, short_description, description, state, start_date, end_date, project_manager, color)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-             ON CONFLICT (sys_id) DO UPDATE SET
-               number=EXCLUDED.number, short_description=EXCLUDED.short_description, description=EXCLUDED.description,
-               state=EXCLUDED.state, start_date=EXCLUDED.start_date, end_date=EXCLUDED.end_date,
-               project_manager=EXCLUDED.project_manager, color=EXCLUDED.color, sys_updated_on=now()`,
-            [p.sys_id, p.number, p.short_description || '(untitled)', p.description || null,
-             state, p.start_date || null, p.end_date || null, pmId, color]
-          );
-
-          // Add to results if not already present from local query
-          if (!localIds.has(p.sys_id)) {
-            localProjects.push({
-              sys_id: p.sys_id,
-              number: p.number,
-              short_description: p.short_description || '(untitled)',
-              description: p.description || null,
-              state,
-              start_date: p.start_date || null,
-              end_date: p.end_date || null,
-              project_manager: pmId,
-              color,
-              source: 'servicenow',
-            });
-          }
+          if (localIds.has(p.sys_id)) continue;
+          localProjects.push({ ...normalizeSnProject(p), source: 'servicenow' });
         }
       } catch (err: any) {
         console.error(`[Projects Search] ServiceNow search failed: ${err.message}`);
@@ -91,6 +80,55 @@ export async function projectRoutes(fastify: FastifyInstance) {
     }
 
     return localProjects;
+  });
+
+  // ── Import a single ServiceNow project into PGlite ───────────────────
+  // Called by the Add Project dialog when the user picks a specific search
+  // result. Upserts just that one project — nothing else.
+  fastify.post('/api/v1/projects/import', async (req, reply) => {
+    const body = req.body as { sys_id?: string };
+    const snSysId = body?.sys_id?.trim();
+    if (!snSysId) {
+      reply.code(400);
+      return { error: 'sys_id is required' };
+    }
+
+    // If it's already local, just return it — no SN round-trip needed.
+    const existing = await fastify.db.query(
+      `SELECT sys_id, number, short_description, description, state, start_date, end_date, project_manager, color
+       FROM pm_project WHERE sys_id = $1`,
+      [snSysId]
+    );
+    if (existing.rows.length > 0) return existing.rows[0];
+
+    if (!fastify.snClient) {
+      reply.code(400);
+      return { error: 'ServiceNow client not configured and project not found locally' };
+    }
+
+    const snRow = await fastify.snClient.queryOne<any>({
+      table: 'pm_project',
+      query: `sys_id=${snSysId}`,
+      fields: ['sys_id', 'number', 'short_description', 'description', 'state', 'start_date', 'end_date', 'project_manager'],
+    });
+    if (!snRow) {
+      reply.code(404);
+      return { error: `Project ${snSysId} not found in ServiceNow` };
+    }
+
+    const n = normalizeSnProject(snRow);
+    await fastify.db.query(
+      `INSERT INTO pm_project (sys_id, number, short_description, description, state, start_date, end_date, project_manager, color)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+       ON CONFLICT (sys_id) DO UPDATE SET
+         number=EXCLUDED.number, short_description=EXCLUDED.short_description, description=EXCLUDED.description,
+         state=EXCLUDED.state, start_date=EXCLUDED.start_date, end_date=EXCLUDED.end_date,
+         project_manager=EXCLUDED.project_manager, color=EXCLUDED.color, sys_updated_on=now()`,
+      [n.sys_id, n.number, n.short_description, n.description, n.state, n.start_date, n.end_date, n.project_manager, n.color]
+    );
+
+    reply.code(201);
+    return n;
   });
 
   fastify.get('/api/v1/projects', async (req, reply) => {
@@ -135,6 +173,17 @@ export async function projectRoutes(fastify: FastifyInstance) {
       conditions.push(`p.state = $${params.length}`);
     }
 
+    // Push managerIds as an explicit IN-list (JS arrays don't reliably bind to
+    // Postgres array params in PGlite). We keep the placeholder list so we can
+    // reuse the same scope both in the EXISTS check AND in the LEFT JOIN that
+    // builds the aggregated assignments array.
+    let managerInList = '';          // e.g. "$2,$3,$4" — used as `IN (${managerInList})`
+    if (managerIds && managerIds.length > 0) {
+      const placeholders = managerIds.map((_, i) => `$${params.length + i + 1}`).join(',');
+      params.push(...managerIds);
+      managerInList = placeholders;
+    }
+
     // Date overlap filter: only include projects with at least one assignment
     // that overlaps the requested window. NULL date bounds are treated as open-ended.
     let dateOverlap = '';
@@ -153,11 +202,10 @@ export async function projectRoutes(fastify: FastifyInstance) {
     //   (a) the project has at least one overlapping assignment from that team, OR
     //   (b) the project has NO assignments at all (freshly added, ready for allocation)
     // This keeps newly-added projects visible while still scoping existing ones to the team/window.
-    if (managerIds || dateOverlap) {
+    if (managerInList || dateOverlap) {
       const existsConditions: string[] = [`a_chk.project = p.sys_id`];
-      if (managerIds) {
-        params.push(managerIds);
-        existsConditions.push(`u_chk.sys_id = ANY($${params.length}::text[])`);
+      if (managerInList) {
+        existsConditions.push(`u_chk.sys_id IN (${managerInList})`);
       }
       if (dateOverlap) existsConditions.push(dateOverlap);
 
@@ -183,6 +231,12 @@ export async function projectRoutes(fastify: FastifyInstance) {
          AND (a.end_date IS NULL OR a.end_date >= '${start_date}')`
       : '';
 
+    // Also scope the aggregated assignments array to the chosen manager/sub-org,
+    // so project cards only display people from that team.
+    const assignmentManagerFilter = managerInList
+      ? `AND a.resource IN (${managerInList})`
+      : '';
+
     const query = `
       SELECT p.*,
         json_agg(json_build_object(
@@ -195,6 +249,7 @@ export async function projectRoutes(fastify: FastifyInstance) {
       FROM pm_project p
       LEFT JOIN sn_plng_att_core_resource_assignment a ON a.project = p.sys_id
         ${assignmentDateFilter}
+        ${assignmentManagerFilter}
       LEFT JOIN sys_user u ON u.sys_id = a.resource
       ${whereClause}
       GROUP BY p.sys_id ORDER BY p.short_description

@@ -44,7 +44,11 @@
       "Bash(node -e \"process.stdin.on\\('data',d=>{const p=JSON.parse\\(d\\);console.log\\(p.length+' projects'\\)}\\)\")",
       "Read(//mnt/c/Users/spath/repository/**)",
       "Read(//c/Users/spath/repository/learn/**)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(ls -la .npmrc)",
+      "Bash(cat .npmrc)",
+      "Bash(pnpm config:*)",
+      "Bash(NODE_TLS_REJECT_UNAUTHORIZED=0 pnpm add pptxgenjs)"
     ]
   }
 }

@@ -1,5 +1,6 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
+import { useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { useManagers } from '@/hooks/usePeople';
 import { useFilters } from '@/lib/filters';
@@ -8,10 +9,38 @@ import {
   PieChart, Pie, Cell, Legend,
   RadialBarChart, RadialBar,
 } from 'recharts';
-import { Users, FolderKanban, TrendingUp, AlertTriangle, SlidersHorizontal, Calendar } from 'lucide-react';
+import { Users, FolderKanban, TrendingUp, AlertTriangle, SlidersHorizontal, Calendar, Download, FileDown, Loader2 } from 'lucide-react';
 import { cn, getUtilizationColor, getUtilizationTextColor } from '@/lib/utils';
+import { downloadChartPng, exportChartsToPptx } from '@/lib/chartExport';
 
-const CHART_COLORS = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#14B8A6', '#6366F1', '#0EA5E9', '#D946EF'];
+// Cool spectrum: yellow → green → teal → blue → indigo.
+const CHART_COLORS = ['#FACC15', '#A3E635', '#84CC16', '#22C55E', '#10B981', '#14B8A6', '#06B6D4', '#0EA5E9', '#3B82F6', '#6366F1'];
+
+/**
+ * Recharts YAxis tick renderer that truncates long labels with an ellipsis
+ * and exposes the full text via a native SVG <title> tooltip on hover.
+ */
+function truncatedYTick(maxChars: number) {
+  return function TruncatedTick(props: any) {
+    const { x, y, payload, textAnchor } = props;
+    const full = String(payload?.value ?? '');
+    const short = full.length > maxChars ? full.slice(0, maxChars - 1) + '…' : full;
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <text
+          dy={4}
+          x={-6}
+          textAnchor={textAnchor ?? 'end'}
+          fontSize={11}
+          fill="#64748b"
+        >
+          {short}
+          <title>{full}</title>
+        </text>
+      </g>
+    );
+  };
+}
 
 export function DashboardView() {
   const { applied, draft, setDraft, apply, changed: filtersChanged } = useFilters();
@@ -28,6 +57,34 @@ export function DashboardView() {
   });
 
   const handleApplyFilters = apply;
+
+  // Refs for each chart card — used for PNG / PPTX export.
+  const headcountRef = useRef<HTMLDivElement>(null);
+  const utilizationRef = useRef<HTMLDivElement>(null);
+  const byDeptRef = useRef<HTMLDivElement>(null);
+  const byRoleRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportPptx = async () => {
+    // IMPORTANT: read `ref.current` at click time, not at render time.
+    // Refs are attached during the commit phase AFTER the first render in
+    // which the charts appear, so a snapshot taken during render would still
+    // see null and we'd end up with an empty deck.
+    const chartExports = [
+      { title: 'Team Size by Project',           element: headcountRef.current },
+      { title: 'Utilization Distribution',       element: utilizationRef.current },
+      { title: 'Avg. Utilization by Department', element: byDeptRef.current },
+      { title: 'Headcount by Role / Skill Type', element: byRoleRef.current },
+    ];
+    setExporting(true);
+    try {
+      await exportChartsToPptx(chartExports, 'Dashboard.pptx');
+    } catch (e) {
+      console.error('Failed to export to PPTX:', e);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // Filter card UI (always visible)
   const filterCard = (
@@ -51,18 +108,21 @@ export function DashboardView() {
               </option>
             ))}
           </select>
+        </div>
+        <div className="min-w-[180px]">
+          <label className="text-xs font-medium text-slate-500 mb-1 block">Scope</label>
           <label className={cn(
-            'flex items-center gap-1.5 mt-2 text-xs select-none',
-            draft.manager ? 'text-slate-600 cursor-pointer' : 'text-slate-300 cursor-not-allowed'
+            'flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white select-none h-[42px]',
+            draft.manager ? 'text-slate-700 cursor-pointer hover:bg-slate-50' : 'text-slate-300 cursor-not-allowed'
           )}>
             <input
               type="checkbox"
               checked={draft.includeSubOrgs}
               disabled={!draft.manager}
               onChange={e => setDraft({ includeSubOrgs: e.target.checked })}
-              className="rounded border-slate-300"
+              className="w-4 h-4 rounded border-slate-300 accent-blue-600"
             />
-            Include sub-orgs (whole team under manager)
+            Include sub-orgs
           </label>
         </div>
         <div className="min-w-[160px]">
@@ -99,6 +159,20 @@ export function DashboardView() {
         >
           Apply
         </button>
+        <button
+          onClick={handleExportPptx}
+          disabled={exporting}
+          className={cn(
+            'px-4 py-2 rounded-xl text-sm font-medium transition-colors inline-flex items-center gap-2 border',
+            exporting
+              ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50',
+          )}
+          title="Export all charts to a PowerPoint deck"
+        >
+          {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+          Export to PPT
+        </button>
       </div>
     </div>
   );
@@ -116,13 +190,13 @@ export function DashboardView() {
 
   const { utilization, projectStats, byDepartment, byTitle, overall } = data;
 
-  // Utilization buckets for pie chart
+  // Utilization buckets for pie chart (cool spectrum: slate → yellow → green → blue).
   const utilBuckets = [
     { name: 'Unallocated (0%)', value: 0, color: '#CBD5E1' },
-    { name: 'Under 50%', value: 0, color: '#10B981' },
-    { name: '50-75%', value: 0, color: '#F59E0B' },
+    { name: 'Under 50%', value: 0, color: '#FACC15' },
+    { name: '50-75%', value: 0, color: '#22C55E' },
     { name: '76-100%', value: 0, color: '#3B82F6' },
-    { name: 'Over-allocated', value: 0, color: '#EF4444' },
+    { name: 'Over-allocated', value: 0, color: '#6366F1' },
   ];
   utilization.forEach((u: any) => {
     const pct = u.total_allocation;
@@ -159,8 +233,11 @@ export function DashboardView() {
       {/* Charts Row 1 */}
       <div className="grid grid-cols-2 gap-6">
         {/* Project Headcount */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <h3 className="text-base font-semibold text-slate-900 mb-4">Team Size by Project</h3>
+        <div ref={headcountRef} className="bg-white rounded-2xl border border-slate-200 p-6">
+          <ChartHeader
+            title="Team Size by Project"
+            onDownload={() => downloadChartPng(headcountRef.current, 'Team Size by Project')}
+          />
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={projectStats} layout="vertical" margin={{ left: 10, right: 30 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -169,7 +246,7 @@ export function DashboardView() {
                 type="category"
                 dataKey="short_description"
                 width={160}
-                tick={{ fontSize: 11, fill: '#64748b' }}
+                tick={truncatedYTick(20)}
               />
               <Tooltip
                 contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
@@ -181,8 +258,11 @@ export function DashboardView() {
         </div>
 
         {/* Utilization Distribution */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <h3 className="text-base font-semibold text-slate-900 mb-4">Utilization Distribution</h3>
+        <div ref={utilizationRef} className="bg-white rounded-2xl border border-slate-200 p-6">
+          <ChartHeader
+            title="Utilization Distribution"
+            onDownload={() => downloadChartPng(utilizationRef.current, 'Utilization Distribution')}
+          />
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -209,8 +289,11 @@ export function DashboardView() {
       {/* Charts Row 2 */}
       <div className="grid grid-cols-2 gap-6">
         {/* By Department */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <h3 className="text-base font-semibold text-slate-900 mb-4">Avg. Utilization by Department</h3>
+        <div ref={byDeptRef} className="bg-white rounded-2xl border border-slate-200 p-6">
+          <ChartHeader
+            title="Avg. Utilization by Department"
+            onDownload={() => downloadChartPng(byDeptRef.current, 'Avg. Utilization by Department')}
+          />
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={byDepartment} margin={{ left: 0, right: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -230,18 +313,21 @@ export function DashboardView() {
         </div>
 
         {/* By Skill Type */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <h3 className="text-base font-semibold text-slate-900 mb-4">Headcount by Role / Skill Type</h3>
+        <div ref={byRoleRef} className="bg-white rounded-2xl border border-slate-200 p-6">
+          <ChartHeader
+            title="Headcount by Role / Skill Type"
+            onDownload={() => downloadChartPng(byRoleRef.current, 'Headcount by Role / Skill Type')}
+          />
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={byTitle.slice(0, 10)} layout="vertical" margin={{ left: 10, right: 30 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis type="number" tick={{ fontSize: 12, fill: '#64748b' }} />
-              <YAxis type="category" dataKey="title" width={150} tick={{ fontSize: 11, fill: '#64748b' }} />
+              <YAxis type="category" dataKey="title" width={150} tick={truncatedYTick(18)} />
               <Tooltip
                 contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}
                 formatter={(value: any, name: any) => [value, name === 'people_count' ? 'People' : 'Avg Util %']}
               />
-              <Bar dataKey="people_count" fill="#8B5CF6" radius={[0, 6, 6, 0]} name="people_count" />
+              <Bar dataKey="people_count" fill="#10B981" radius={[0, 6, 6, 0]} name="people_count" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -289,6 +375,22 @@ export function DashboardView() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ChartHeader({ title, onDownload }: { title: string; onDownload: () => void }) {
+  return (
+    <div className="flex items-center justify-between mb-4">
+      <h3 className="text-base font-semibold text-slate-900">{title}</h3>
+      <button
+        onClick={onDownload}
+        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+        title="Download as PNG"
+        aria-label={`Download ${title} as PNG`}
+      >
+        <Download className="w-4 h-4" />
+      </button>
     </div>
   );
 }

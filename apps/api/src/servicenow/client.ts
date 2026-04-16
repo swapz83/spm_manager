@@ -155,6 +155,49 @@ export class ServiceNowClient {
     return { ok: resp.ok, status: resp.status, statusText: resp.statusText, data };
   }
 
+  // ── SCRIPTED API ──────────────────────────────────────────────────────
+
+  /**
+   * POST to an arbitrary ServiceNow scripted REST API path
+   * (e.g. `/api/sn_rm_ws/resource_management_workspace/unassignResources`).
+   * Returns the raw parsed response along with ok/status so callers can
+   * decide how to handle errors.
+   */
+  async callApi(opts: {
+    path: string;
+    method?: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+    body?: Record<string, any>;
+  }): Promise<{ ok: boolean; status: number; statusText: string; data: any }> {
+    const method = opts.method ?? 'POST';
+    const url = `${this.baseUrl}${opts.path.startsWith('/') ? '' : '/'}${opts.path}`;
+    const bodyJson = opts.body !== undefined ? JSON.stringify(opts.body) : undefined;
+    const start = Date.now();
+
+    console.log(`${TAG} → ${method} ${url}`);
+    if (bodyJson !== undefined) console.log(`${TAG}   request body: ${truncate(bodyJson)}`);
+
+    const resp = await fetch(url, {
+      method,
+      headers: this.headers,
+      body: bodyJson,
+    });
+
+    const elapsed = Date.now() - start;
+    const bodyText = await resp.text();
+
+    console.log(`${TAG} ← ${resp.status} ${resp.statusText}  (${elapsed}ms)  ${method} ${opts.path}`);
+    console.log(`${TAG}   response: ${truncate(bodyText)}`);
+
+    let data: any = null;
+    try {
+      data = JSON.parse(bodyText);
+    } catch {
+      data = { _raw: bodyText };
+    }
+
+    return { ok: resp.ok, status: resp.status, statusText: resp.statusText, data };
+  }
+
   // ── CONNECTIVITY CHECK ────────────────────────────────────────────────
 
   /**

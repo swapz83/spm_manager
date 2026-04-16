@@ -22,3 +22,9 @@ export function getUtilizationTextColor(pct: number) {
   if (pct <= 90) return 'text-orange-700';
   return 'text-red-700';
 }
+
+// Cool chart palette: yellow → lime → green → teal → blue → indigo.
+export const CHART_PALETTE = [
+  '#FACC15', '#A3E635', '#84CC16', '#22C55E', '#10B981',
+  '#14B8A6', '#06B6D4', '#0EA5E9', '#3B82F6', '#6366F1',
+];

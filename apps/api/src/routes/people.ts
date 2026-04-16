@@ -92,8 +92,13 @@ export async function peopleRoutes(fastify: FastifyInstance) {
     const params: any[] = [];
     if (manager) {
       const ids = await expandManagerScope(fastify.db, manager, includeSubOrgs);
-      params.push(ids);
-      whereClause += ` AND u.sys_id = ANY($${params.length}::text[])`;
+      if (ids.length === 0) {
+        // No one in scope — return empty list immediately
+        return [];
+      }
+      const placeholders = ids.map((_, i) => `$${params.length + i + 1}`).join(',');
+      params.push(...ids);
+      whereClause += ` AND u.sys_id IN (${placeholders})`;
     }
 
     // Params for date filtering
@@ -177,22 +182,31 @@ export async function peopleRoutes(fastify: FastifyInstance) {
     // Otherwise, show all individual contributors (non-managers).
     const orgIds = manager ? await expandManagerScope(fastify.db, manager, includeSubOrgs) : null;
 
-    const managerFilter = orgIds
-      ? `u.sys_id = ANY($3::text[])`
-      : IS_NOT_MANAGER;
+    // Build params: [range.start, range.end, ...orgIds?]
+    const params: any[] = [range.start, range.end];
+    let orgInList = '';
+    if (orgIds && orgIds.length > 0) {
+      const placeholders = orgIds.map((_, i) => `$${params.length + i + 1}`).join(',');
+      params.push(...orgIds);
+      orgInList = `u.sys_id IN (${placeholders})`;
+    }
+
+    const managerFilter = orgIds && orgIds.length > 0 ? orgInList : IS_NOT_MANAGER;
     const icFilter = `u.active = true AND ${managerFilter}`;
-    const params: any[] = orgIds
-      ? [range.start, range.end, orgIds]
-      : [range.start, range.end];
+
+    // Same id list, but aliased to u2 for project-team EXISTS check
+    const orgInListU2 = orgIds && orgIds.length > 0
+      ? `u2.sys_id IN (${orgIds.map((_, i) => `$${i + 3}`).join(',')})`
+      : '';
 
     // Project filter — include only projects with at least one assignment
     // that overlaps the date window (and, when a manager is set, from that team/sub-org).
-    const projectTeamFilter = orgIds
+    const projectTeamFilter = orgIds && orgIds.length > 0
       ? `WHERE EXISTS (
           SELECT 1 FROM sn_plng_att_core_resource_assignment a2
           JOIN sys_user u2 ON u2.sys_id = a2.resource
           WHERE a2.project = p.sys_id
-            AND u2.sys_id = ANY($3::text[])
+            AND ${orgInListU2}
             AND ${dateOverlapCondition('a2', '$1', '$2')}
         )`
       : `WHERE EXISTS (

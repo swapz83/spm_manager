@@ -71,12 +71,18 @@ export function AddProjectDialog({ onClose, onAdded }: AddProjectDialogProps) {
   const handleSelect = async (project: SearchResult) => {
     setAdding(project.sys_id);
     try {
-      // The search endpoint already upserts SN projects into PGlite.
-      // Notify parent so it can pin the project into the visible list (filters may exclude it otherwise),
-      // then invalidate queries to refresh.
-      onAdded?.(project);
+      // Explicitly import ONLY the picked project into PGlite. Search is
+      // read-only, so nothing else from the results list gets persisted.
+      const imported = project.source === 'servicenow'
+        ? await api.projects.import(project.sys_id)
+        : project;
+      // Pin into the visible list (filters may exclude it otherwise), then
+      // invalidate queries to refresh.
+      onAdded?.({ ...project, ...imported });
       await qc.invalidateQueries({ queryKey: ['projects'] });
       onClose();
+    } catch (err) {
+      console.error('Failed to add project:', err);
     } finally {
       setAdding(null);
     }

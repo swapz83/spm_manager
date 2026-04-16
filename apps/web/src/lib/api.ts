@@ -36,6 +36,7 @@ export const api = {
   projects: {
     list: (params?: ListParams) => request<any[]>(`/projects${buildQS(params)}`),
     search: (q: string) => request<any[]>(`/projects/search?q=${encodeURIComponent(q)}`),
+    import: (sys_id: string) => request<any>('/projects/import', { method: 'POST', body: JSON.stringify({ sys_id }) }),
     create: (data: any) => request<any>('/projects', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: any) => request<any>(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: string) => request<void>(`/projects/${id}`, { method: 'DELETE' }),

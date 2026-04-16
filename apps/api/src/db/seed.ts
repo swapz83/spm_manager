@@ -35,14 +35,14 @@ const users = [
 ];
 
 const projects = [
-  { id: 'p001', number: 'PRJ0001001', short_description: 'Cloud Migration Phase 2', description: 'Migrate remaining on-prem services to AWS', state: 'active', start_date: '2026-01-15', end_date: '2026-06-30', color: '#3B82F6' },
-  { id: 'p002', number: 'PRJ0001002', short_description: 'Mobile App Redesign', description: 'Complete redesign of the customer-facing mobile application', state: 'active', start_date: '2026-02-01', end_date: '2026-07-31', color: '#8B5CF6' },
-  { id: 'p003', number: 'PRJ0001003', short_description: 'API Gateway v3', description: 'Build next-generation API gateway with rate limiting and auth', state: 'active', start_date: '2026-03-01', end_date: '2026-08-31', color: '#10B981' },
-  { id: 'p004', number: 'PRJ0001004', short_description: 'Customer Portal Refresh', description: 'Modernize the customer self-service portal', state: 'planning', start_date: '2026-05-01', end_date: '2026-10-31', color: '#F59E0B' },
-  { id: 'p005', number: 'PRJ0001005', short_description: 'Data Pipeline Modernization', description: 'Replace legacy ETL with streaming architecture', state: 'active', start_date: '2026-01-01', end_date: '2026-09-30', color: '#EF4444' },
-  { id: 'p006', number: 'PRJ0001006', short_description: 'Security Compliance Audit', description: 'SOC2 Type II compliance remediation', state: 'active', start_date: '2026-02-15', end_date: '2026-05-31', color: '#EC4899' },
-  { id: 'p007', number: 'PRJ0001007', short_description: 'ML Recommendation Engine', description: 'Build personalized recommendation system using collaborative filtering', state: 'planning', start_date: '2026-06-01', end_date: '2026-12-31', color: '#14B8A6' },
-  { id: 'p008', number: 'PRJ0001008', short_description: 'Internal Tools Platform', description: 'Unified platform for internal developer and operations tooling', state: 'active', start_date: '2026-03-15', end_date: '2026-11-30', color: '#6366F1' },
+  { id: 'p001', number: 'PRJ0001001', short_description: 'Cloud Migration Phase 2', description: 'Migrate remaining on-prem services to AWS', state: 'active', start_date: '2026-01-15', end_date: '2026-06-30', color: '#E76F51' },
+  { id: 'p002', number: 'PRJ0001002', short_description: 'Mobile App Redesign', description: 'Complete redesign of the customer-facing mobile application', state: 'active', start_date: '2026-02-01', end_date: '2026-07-31', color: '#F4A261' },
+  { id: 'p003', number: 'PRJ0001003', short_description: 'API Gateway v3', description: 'Build next-generation API gateway with rate limiting and auth', state: 'active', start_date: '2026-03-01', end_date: '2026-08-31', color: '#E9C46A' },
+  { id: 'p004', number: 'PRJ0001004', short_description: 'Customer Portal Refresh', description: 'Modernize the customer self-service portal', state: 'planning', start_date: '2026-05-01', end_date: '2026-10-31', color: '#D4572A' },
+  { id: 'p005', number: 'PRJ0001005', short_description: 'Data Pipeline Modernization', description: 'Replace legacy ETL with streaming architecture', state: 'active', start_date: '2026-01-01', end_date: '2026-09-30', color: '#BC6C25' },
+  { id: 'p006', number: 'PRJ0001006', short_description: 'Security Compliance Audit', description: 'SOC2 Type II compliance remediation', state: 'active', start_date: '2026-02-15', end_date: '2026-05-31', color: '#F48C06' },
+  { id: 'p007', number: 'PRJ0001007', short_description: 'ML Recommendation Engine', description: 'Build personalized recommendation system using collaborative filtering', state: 'planning', start_date: '2026-06-01', end_date: '2026-12-31', color: '#E85D04' },
+  { id: 'p008', number: 'PRJ0001008', short_description: 'Internal Tools Platform', description: 'Unified platform for internal developer and operations tooling', state: 'active', start_date: '2026-03-15', end_date: '2026-11-30', color: '#C13C2E' },
 ];
 
 const assignments = [

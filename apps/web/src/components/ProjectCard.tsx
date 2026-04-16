@@ -66,10 +66,17 @@ export function ProjectCard({ project, onRemovePending }: ProjectCardProps) {
         </div>
 
         {/* Assignments table */}
+        {/*
+         * Column widths are fixed (not `auto`) so:
+         *  - FTE pills (50% / 100%) all sit in the same x-column
+         *  - Date cells are wide enough for the longest formatted date
+         *    ("Dec 31, 26"), so nothing wraps to a second line
+         *  - The person column flexes (`1fr`) and truncates with ellipsis
+         */}
         {assignments.length > 0 && (
           <div className="border border-slate-100 rounded-xl overflow-hidden">
             {/* Table header */}
-            <div className="grid grid-cols-[1fr_60px_auto_auto_28px] gap-1 px-3 py-1.5 bg-slate-50 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+            <div className="grid grid-cols-[minmax(0,1fr)_64px_72px_72px_28px] gap-1 px-3 py-1.5 bg-slate-50 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
               <span>Person</span>
               <span className="text-center">FTE</span>
               <span className="text-center">From</span>
@@ -83,7 +90,7 @@ export function ProjectCard({ project, onRemovePending }: ProjectCardProps) {
                 <div
                   key={a.sys_id}
                   className={cn(
-                    'grid grid-cols-[1fr_60px_auto_auto_28px] gap-1 items-center px-3 py-2 group transition-colors border-t border-slate-100',
+                    'grid grid-cols-[minmax(0,1fr)_64px_72px_72px_28px] gap-1 items-center px-3 py-2 group transition-colors border-t border-slate-100',
                     isPending ? 'bg-blue-50/60' : 'hover:bg-slate-50'
                   )}
                 >
@@ -100,9 +107,9 @@ export function ProjectCard({ project, onRemovePending }: ProjectCardProps) {
                       {isPending && <span className="ml-1 text-[10px] text-blue-500">(new)</span>}
                     </span>
                   </div>
-                  {/* Allocation */}
+                  {/* Allocation — fixed-width pill so values align in a column */}
                   <span className={cn(
-                    'text-xs font-semibold text-center px-1.5 py-0.5 rounded-md border',
+                    'text-xs font-semibold text-center px-1.5 py-0.5 rounded-md border w-14 mx-auto tabular-nums',
                     isPending
                       ? 'text-blue-600 bg-blue-100 border-blue-200'
                       : 'text-slate-600 bg-white border-slate-200'
@@ -110,11 +117,11 @@ export function ProjectCard({ project, onRemovePending }: ProjectCardProps) {
                     {a.allocation_pct}%
                   </span>
                   {/* Start */}
-                  <span className="text-[11px] text-slate-500 text-center whitespace-nowrap px-1">
+                  <span className="text-[11px] text-slate-500 text-center whitespace-nowrap tabular-nums">
                     {formatDate(a.start_date)}
                   </span>
                   {/* End */}
-                  <span className="text-[11px] text-slate-500 text-center whitespace-nowrap px-1">
+                  <span className="text-[11px] text-slate-500 text-center whitespace-nowrap tabular-nums">
                     {formatDate(a.end_date)}
                   </span>
                   {/* Remove */}
@@ -126,7 +133,7 @@ export function ProjectCard({ project, onRemovePending }: ProjectCardProps) {
                         deleteAssignment.mutate(a.sys_id);
                       }
                     }}
-                    className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-red-100 rounded transition-all"
+                    className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-red-100 rounded transition-all justify-self-end"
                   >
                     <X className="w-3 h-3 text-red-500" />
                   </button>
@@ -157,7 +164,7 @@ export function ProjectCard({ project, onRemovePending }: ProjectCardProps) {
 }
 
 function stringToColor(str: string): string {
-  const colors = ['#3B82F6','#8B5CF6','#EC4899','#EF4444','#F59E0B','#10B981','#14B8A6','#6366F1','#0EA5E9','#D946EF'];
+  const colors = ['#E76F51','#F4A261','#E9C46A','#D4572A','#BC6C25','#F48C06','#FAA307','#E85D04','#C13C2E','#8B2E19'];
   let hash = 0;
   for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
   return colors[Math.abs(hash) % colors.length];

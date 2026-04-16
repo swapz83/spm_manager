@@ -283,6 +283,7 @@ export function ManageView() {
   const isLoading = hasApplied && (loadingProjects || loadingPeople);
   const addCount = pendingChanges.filter(c => c.type === 'add').length;
   const endEarlyCount = pendingChanges.filter(c => c.type === 'end_early').length;
+  const unassignCount = pendingChanges.filter(c => c.type === 'unassign').length;
   const totalPending = pendingChanges.length;
 
   return (
@@ -313,16 +314,19 @@ export function ManageView() {
                   ))}
                 </select>
               </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-500">Scope</label>
               <label className={cn(
-                'flex items-center gap-1.5 mt-1 text-xs select-none',
-                draftManager ? 'text-slate-600 cursor-pointer' : 'text-slate-300 cursor-not-allowed'
+                'flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white select-none h-[42px]',
+                draftManager ? 'text-slate-700 cursor-pointer hover:bg-slate-50' : 'text-slate-300 cursor-not-allowed'
               )}>
                 <input
                   type="checkbox"
                   checked={draft.includeSubOrgs}
                   disabled={!draftManager}
                   onChange={e => setDraft({ includeSubOrgs: e.target.checked })}
-                  className="rounded border-slate-300"
+                  className="w-4 h-4 rounded border-slate-300 accent-blue-600"
                 />
                 Include sub-orgs
               </label>
@@ -350,6 +354,7 @@ export function ManageView() {
                 <div className="text-sm text-slate-500">
                   <span className="font-bold text-blue-600">{addCount}</span> add
                   {endEarlyCount > 0 && <>, <span className="font-bold text-amber-600">{endEarlyCount}</span> end</>}
+                  {unassignCount > 0 && <>, <span className="font-bold text-red-600">{unassignCount}</span> remove</>}
                 </div>
                 <button onClick={() => setShowReview(true)}
                   className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">

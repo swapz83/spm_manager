@@ -29,7 +29,7 @@ function computeAllocations(projectCount: number): number[] {
 
 /* ─── Helpers ─── */
 function stringToColor(str: string): string {
-  const colors = ['#3B82F6','#8B5CF6','#EC4899','#EF4444','#F59E0B','#10B981','#14B8A6','#6366F1','#0EA5E9','#D946EF'];
+  const colors = ['#E76F51','#F4A261','#E9C46A','#D4572A','#BC6C25','#F48C06','#FAA307','#E85D04','#C13C2E','#8B2E19'];
   let hash = 0;
   for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
   return colors[Math.abs(hash) % colors.length];
@@ -298,16 +298,19 @@ export function BulkAllocationsView() {
                 </option>
               ))}
             </select>
+          </div>
+          <div className="min-w-[180px]">
+            <label className="text-xs font-medium text-slate-500 mb-1 block">Scope</label>
             <label className={cn(
-              'flex items-center gap-1.5 mt-2 text-xs select-none',
-              draftManager ? 'text-slate-600 cursor-pointer' : 'text-slate-300 cursor-not-allowed'
+              'flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white select-none h-[42px]',
+              draftManager ? 'text-slate-700 cursor-pointer hover:bg-slate-50' : 'text-slate-300 cursor-not-allowed'
             )}>
               <input
                 type="checkbox"
                 checked={draft.includeSubOrgs}
                 disabled={!draftManager}
                 onChange={e => setDraft({ includeSubOrgs: e.target.checked })}
-                className="rounded border-slate-300"
+                className="w-4 h-4 rounded border-slate-300 accent-blue-600"
               />
               Include sub-orgs
             </label>

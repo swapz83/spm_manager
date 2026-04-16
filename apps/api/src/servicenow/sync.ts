@@ -73,9 +73,11 @@ interface SnAssignment {
 
 // ── Palette for project color chips (we assign based on hash) ──────────
 
+// Warm palette: coral, peach, mustard, terracotta, copper, pumpkin,
+// amber, vivid orange, rust, brick.
 export const PROJECT_COLORS = [
-  '#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444',
-  '#EC4899', '#14B8A6', '#6366F1', '#0EA5E9', '#D946EF',
+  '#E76F51', '#F4A261', '#E9C46A', '#D4572A', '#BC6C25',
+  '#F48C06', '#FAA307', '#E85D04', '#C13C2E', '#8B2E19',
 ];
 export function pickColor(s: string): string {
   let h = 0;

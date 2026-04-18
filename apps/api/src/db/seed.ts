@@ -89,9 +89,9 @@ export async function seed(db: PGlite) {
   for (const m of managers) {
     const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(m.first_name + ' ' + m.last_name)}&background=random&size=128`;
     await db.query(
-      `INSERT INTO sys_user (sys_id, user_name, first_name, last_name, email, title, department, manager, avatar_url)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-      [m.id, m.user_name, m.first_name, m.last_name, m.email, m.title, m.department, m.manager, avatar]
+      `INSERT INTO sys_user (sys_id, user_name, first_name, last_name, email, title, department, department_name, manager, avatar_url)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      [m.id, m.user_name, m.first_name, m.last_name, m.email, m.title, m.department, m.department, m.manager, avatar]
     );
   }
 
@@ -99,9 +99,9 @@ export async function seed(db: PGlite) {
   for (const u of users) {
     const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.first_name + ' ' + u.last_name)}&background=random&size=128`;
     await db.query(
-      `INSERT INTO sys_user (sys_id, user_name, first_name, last_name, email, title, department, manager, avatar_url)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-      [u.id, u.user_name, u.first_name, u.last_name, u.email, u.title, u.department, u.manager, avatar]
+      `INSERT INTO sys_user (sys_id, user_name, first_name, last_name, email, title, department, department_name, manager, avatar_url)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      [u.id, u.user_name, u.first_name, u.last_name, u.email, u.title, u.department, u.department, u.manager, avatar]
     );
   }
 

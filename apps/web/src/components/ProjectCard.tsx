@@ -29,8 +29,8 @@ export function ProjectCard({ project, onRemovePending }: ProjectCardProps) {
     <div
       ref={setNodeRef}
       className={cn(
-        'bg-white rounded-2xl border border-slate-200 overflow-hidden transition-all',
-        isOver && 'ring-2 ring-blue-400 border-blue-300 shadow-lg bg-blue-50/30'
+        'bg-white rounded-2xl shadow-[0_1px_3px_rgba(17,24,39,0.06),0_2px_8px_rgba(17,24,39,0.04)] overflow-hidden transition-all',
+        isOver && 'ring-2 ring-blue-400 shadow-lg bg-blue-50/30'
       )}
     >
       <div className="h-1.5" style={{ backgroundColor: project.color || '#94a3b8' }} />
@@ -38,8 +38,8 @@ export function ProjectCard({ project, onRemovePending }: ProjectCardProps) {
         {/* Header */}
         <div className="flex items-start justify-between mb-2">
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-slate-900 text-base truncate">{project.short_description}</h3>
-            <span className="text-xs text-slate-400 font-mono">{project.number}</span>
+            <h3 className="font-semibold text-gray-900 text-[14px] truncate">{project.short_description}</h3>
+            <span className="text-[11px] text-gray-400 font-mono">{project.number}</span>
           </div>
           <span className={cn(
             'text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ml-2',

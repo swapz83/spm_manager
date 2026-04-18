@@ -15,6 +15,7 @@ import { useCreateAssignment } from '@/hooks/useAssignments';
 import { Plus, Search, Users, Eye, SlidersHorizontal, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFilters } from '@/lib/filters';
+import { DateRangePicker } from '@/components/DateRangePicker';
 
 export interface PendingChange {
   id: string;
@@ -46,16 +47,12 @@ function getDefaultEndDate(): string {
 
 export function ManageView() {
   // ── Shared filter state (persists across tabs) ──
-  const { applied, draft, setDraft, apply, changed } = useFilters();
+  const { applied, draft, setDraft, apply, applyWith, changed } = useFilters();
   const draftManager = draft.manager;
-  const draftStartDate = draft.startDate;
-  const draftEndDate = draft.endDate;
   const appliedManager = applied.manager;
   const appliedStartDate = applied.startDate;
   const appliedEndDate = applied.endDate;
   const setDraftManager = (v: string) => setDraft({ manager: v });
-  const setDraftStartDate = (v: string) => setDraft({ startDate: v });
-  const setDraftEndDate = (v: string) => setDraft({ endDate: v });
   const hasApplied = true; // filters are always considered "applied" — queries run on mount
 
   // ── Selection & UI state ──
@@ -291,59 +288,55 @@ export function ManageView() {
       <div className="max-w-[1600px] mx-auto px-6 py-6">
 
         {/* ── Filter Card ── */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <SlidersHorizontal className="w-4 h-4 text-slate-500" />
-            <h3 className="text-sm font-semibold text-slate-700">Filters</h3>
-          </div>
-          <div className="flex items-end gap-4 flex-wrap">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-slate-500">Manager / Team</label>
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-slate-400" />
-                <select
-                  value={draftManager}
-                  onChange={e => setDraftManager(e.target.value)}
-                  className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white min-w-[220px]"
-                >
-                  <option value="">All People</option>
-                  {managers?.map((m: any) => (
-                    <option key={m.sys_id} value={m.sys_id}>
-                      {m.first_name} {m.last_name}&rsquo;s team ({m.direct_report_count})
-                    </option>
-                  ))}
-                </select>
-              </div>
+        <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(17,24,39,0.06),0_2px_8px_rgba(17,24,39,0.04)] p-5 mb-5">
+          <div className="flex items-center gap-6 flex-wrap">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-gray-400" />
+              <span className="text-[10px] font-bold tracking-[0.1em] uppercase text-gray-400">Filters</span>
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-slate-500">Scope</label>
+            <div className="h-5 w-px bg-gray-100 flex-shrink-0" />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold tracking-[0.08em] uppercase text-gray-400">Manager / Team</label>
+              <select
+                value={draftManager}
+                onChange={e => setDraftManager(e.target.value)}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-700 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[220px]"
+              >
+                <option value="">All People</option>
+                {managers?.map((m: any) => (
+                  <option key={m.sys_id} value={m.sys_id}>
+                    {m.first_name} {m.last_name}&rsquo;s team ({m.direct_report_count})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold tracking-[0.08em] uppercase text-gray-400">Scope</label>
               <label className={cn(
-                'flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white select-none h-[42px]',
-                draftManager ? 'text-slate-700 cursor-pointer hover:bg-slate-50' : 'text-slate-300 cursor-not-allowed'
+                'flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 select-none h-[34px]',
+                draftManager ? 'text-gray-700 cursor-pointer hover:bg-white' : 'text-gray-300 cursor-not-allowed'
               )}>
                 <input
                   type="checkbox"
                   checked={draft.includeSubOrgs}
                   disabled={!draftManager}
                   onChange={e => setDraft({ includeSubOrgs: e.target.checked })}
-                  className="w-4 h-4 rounded border-slate-300 accent-blue-600"
+                  className="w-3.5 h-3.5 rounded border-gray-300 accent-blue-600"
                 />
-                Include sub-orgs
+                <span className="text-xs">Include sub-orgs</span>
               </label>
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-slate-500">Start Date</label>
-              <input type="date" value={draftStartDate} onChange={e => setDraftStartDate(e.target.value)}
-                className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-slate-500">End Date</label>
-              <input type="date" value={draftEndDate} onChange={e => setDraftEndDate(e.target.value)}
-                className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
-            </div>
+            <DateRangePicker
+              startDate={draft.startDate}
+              endDate={draft.endDate}
+              onChange={(s, e) => {
+                applyWith({ startDate: s, endDate: e });
+                setSelectedPeople(new Set());
+              }}
+            />
             <button onClick={handleApplyFilters}
-              className={cn('px-6 py-2 rounded-xl text-sm font-medium transition-colors shadow-sm',
-                filtersChanged ? 'bg-amber-500 text-white hover:bg-amber-600 ring-2 ring-amber-200' : 'bg-blue-600 text-white hover:bg-blue-700')}>
+              className={cn('px-4 py-1.5 rounded-lg text-sm font-semibold transition-all',
+                filtersChanged ? 'bg-amber-500 text-white hover:bg-amber-600 shadow-sm' : 'bg-[#1A56DB] text-white hover:bg-blue-700 shadow-sm')}>
               {hasApplied ? (filtersChanged ? 'Re-apply' : 'Applied') : 'Apply'}
             </button>
 
@@ -351,14 +344,14 @@ export function ManageView() {
 
             {totalPending > 0 && (
               <div className="flex items-center gap-3">
-                <div className="text-sm text-slate-500">
+                <div className="text-sm text-gray-500">
                   <span className="font-bold text-blue-600">{addCount}</span> add
                   {endEarlyCount > 0 && <>, <span className="font-bold text-amber-600">{endEarlyCount}</span> end</>}
                   {unassignCount > 0 && <>, <span className="font-bold text-red-600">{unassignCount}</span> remove</>}
                 </div>
                 <button onClick={() => setShowReview(true)}
-                  className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
-                  <Eye className="w-4 h-4" /> Review
+                  className="flex items-center gap-2 px-4 py-1.5 bg-[#1A56DB] text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm">
+                  <Eye className="w-3.5 h-3.5" /> Review
                 </button>
               </div>
             )}
@@ -387,11 +380,11 @@ export function ManageView() {
             {/* Project Board */}
             <div className="flex-1">
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg font-semibold text-slate-800">
-                  Projects <span className="text-sm font-normal text-slate-400">({projects?.length || 0})</span>
+                <h2 className="text-[15px] font-semibold text-gray-900">
+                  Projects <span className="text-sm font-normal text-gray-400">({projects?.length || 0})</span>
                 </h2>
                 <button onClick={() => setShowAddProject(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
+                  className="flex items-center gap-2 px-4 py-2 bg-[#1A56DB] text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm">
                   <Plus className="w-4 h-4" /> Add Project
                 </button>
               </div>
@@ -407,12 +400,12 @@ export function ManageView() {
               <div className="sticky top-20">
                 {/* Header with selection count & clear */}
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-slate-800">
-                    People <span className="text-sm font-normal text-slate-400">({filteredPeople.length})</span>
+                  <h2 className="text-[15px] font-semibold text-gray-900">
+                    People <span className="text-sm font-normal text-gray-400">({filteredPeople.length})</span>
                   </h2>
                   {selectedPeople.size > 0 && (
                     <button onClick={clearSelection}
-                      className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                      className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                       <XCircle className="w-3.5 h-3.5" />
                       Clear ({selectedPeople.size})
                     </button>
@@ -421,16 +414,16 @@ export function ManageView() {
 
                 {/* Selection banner */}
                 {selectedPeople.size > 0 && (
-                  <div className="mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-700">
+                  <div className="mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
                     <strong>{selectedPeople.size}</strong> selected &mdash; drag any selected person onto a project to assign all
                   </div>
                 )}
 
                 <div className="relative mb-4">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                   <input type="text" placeholder="Search people..." value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white" />
+                    className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50" />
                 </div>
 
                 <div className="space-y-2 max-h-[calc(100vh-320px)] overflow-y-auto pr-1">

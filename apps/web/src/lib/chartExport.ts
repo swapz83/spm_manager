@@ -78,9 +78,14 @@ function safeFileName(s: string): string {
 
 export async function downloadChartPng(container: HTMLElement | null, title: string) {
   if (!container) return;
-  const svg = container.querySelector('svg');
+  // Prefer the Recharts canvas SVG; fall back to any SVG.
+  // Without this, querySelector('svg') would return the lucide Download icon SVG
+  // that lives inside the same card div — producing a tiny icon export instead of the chart.
+  const svg =
+    container.querySelector<SVGElement>('svg.recharts-surface') ??
+    container.querySelector<SVGElement>('svg');
   if (!svg) return;
-  const blob = await svgToPngBlob(svg as SVGElement, { title, scale: 2 });
+  const blob = await svgToPngBlob(svg, { title, scale: 2 });
   triggerDownload(blob, `${safeFileName(title)}.png`);
 }
 

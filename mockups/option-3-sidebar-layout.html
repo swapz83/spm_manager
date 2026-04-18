@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Option 3 — Sidebar Layout</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Manrope', sans-serif; background: #F4F6FA; color: #1C2340; min-height: 100vh; display: flex; }
+
+/* Sidebar */
+.sidebar {
+  width: 220px;
+  background: #1C2340;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+.sidebar-logo {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.logo-mark { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.logo-icon { width: 32px; height: 32px; background: #3B6EE8; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.logo-name { font-size: 14px; font-weight: 700; color: #F0F4FF; letter-spacing: -0.01em; }
+.logo-sub { font-size: 10px; color: rgba(255,255,255,0.25); letter-spacing: 0.08em; text-transform: uppercase; padding-left: 42px; }
+.sidebar-nav { padding: 16px 12px; flex: 1; }
+.nav-section { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.2); padding: 0 8px; margin-bottom: 6px; margin-top: 16px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.4); cursor: pointer; margin-bottom: 2px; transition: all 0.15s; }
+.nav-item svg { flex-shrink: 0; opacity: 0.6; }
+.nav-item.active { background: rgba(59,110,232,0.18); color: #93B4FF; font-weight: 600; }
+.nav-item.active svg { opacity: 1; color: #3B6EE8; }
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: center; gap: 10px;
+}
+.avatar-sm { width: 28px; height: 28px; border-radius: 50%; background: #3B6EE8; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: white; flex-shrink: 0; }
+.user-name { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.6); }
+.user-role { font-size: 9px; color: rgba(255,255,255,0.25); }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: #34D399; margin-left: auto; }
+
+/* Main */
+.content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+/* Top bar */
+.topbar {
+  background: white;
+  border-bottom: 1px solid #E8ECF2;
+  padding: 0 28px;
+  height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 10;
+}
+.page-breadcrumb { font-size: 13px; font-weight: 700; color: #1C2340; display: flex; align-items: center; gap: 6px; }
+.bc-sep { color: #D1D5DB; }
+.bc-sub { font-weight: 400; color: #6B7280; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.date-range { font-size: 11px; color: #6B7280; background: #F4F6FA; border: 1px solid #E8ECF2; border-radius: 6px; padding: 5px 12px; }
+.btn-ppt { background: #1C2340; color: white; border: none; border-radius: 7px; padding: 7px 14px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 5px; }
+.live-badge { font-size: 10px; font-weight: 600; color: #059669; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 99px; padding: 4px 8px; display: flex; align-items: center; gap: 4px; }
+.lb-dot { width: 5px; height: 5px; border-radius: 50%; background: #059669; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+/* Main content */
+.main { padding: 24px 28px; }
+
+/* Filter bar */
+.filter-bar { background: white; border: 1px solid #E8ECF2; border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+.fi { display: flex; flex-direction: column; gap: 3px; }
+.fi label { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #9CA3AF; }
+.fi select, .fi input { background: #F4F6FA; border: 1px solid #E8ECF2; border-radius: 6px; color: #374151; font-size: 11px; padding: 5px 9px; outline: none; font-family: inherit; }
+.fa { margin-left: auto; display: flex; gap: 7px; }
+.fa-apply { background: #3B6EE8; color: white; border: none; border-radius: 6px; padding: 6px 14px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.fa-export { background: white; color: #6B7280; border: 1px solid #E8ECF2; border-radius: 6px; padding: 6px 10px; font-size: 11px; cursor: pointer; font-family: inherit; }
+
+/* KPI row */
+.kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
+.kpi { background: white; border: 1px solid #E8ECF2; border-radius: 10px; padding: 18px; display: flex; align-items: center; gap: 14px; }
+.kpi-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.kpi-body { }
+.kpi-label { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #9CA3AF; margin-bottom: 4px; }
+.kpi-val { font-size: 34px; font-weight: 800; letter-spacing: -0.04em; color: #1C2340; line-height: 1; }
+
+/* Charts */
+.charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+.chart-card { background: white; border: 1px solid #E8ECF2; border-radius: 10px; padding: 20px; }
+.ch { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.ch-title { font-size: 12px; font-weight: 700; color: #1C2340; }
+.ch-dl { font-size: 10px; color: #9CA3AF; border: 1px solid #E8ECF2; border-radius: 5px; padding: 3px 8px; cursor: pointer; }
+
+/* Horizontal bars */
+.hbar { display: flex; flex-direction: column; gap: 9px; }
+.hb-row { display: flex; align-items: center; gap: 8px; }
+.hb-label { font-size: 10px; color: #6B7280; width: 130px; text-align: right; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hb-track { flex: 1; background: #F4F6FA; border-radius: 4px; height: 16px; overflow: hidden; }
+.hb-fill { height: 100%; border-radius: 4px; }
+.hb-num { font-size: 10px; font-weight: 600; color: #9CA3AF; width: 20px; flex-shrink: 0; }
+
+/* Donut */
+.donut-wrap { display: flex; align-items: center; justify-content: center; gap: 20px; }
+.leg { display: flex; flex-direction: column; gap: 7px; }
+.leg-row { display: flex; align-items: center; gap: 7px; font-size: 11px; color: #6B7280; }
+.leg-sq { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.leg-val { margin-left: auto; font-weight: 700; color: #374151; min-width: 24px; text-align: right; }
+
+/* Vertical bars inline */
+.vbars { display: flex; align-items: flex-end; gap: 8px; height: 160px; }
+.vb-col { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+.vb-label { font-size: 9px; color: #9CA3AF; text-align: center; line-height: 1.2; white-space: nowrap; }
+.vb-track { width: 100%; background: #F4F6FA; border-radius: 5px 5px 0 0; display: flex; align-items: flex-end; height: 120px; }
+.vb-fill { width: 100%; border-radius: 5px 5px 0 0; }
+.vb-pct { font-size: 10px; font-weight: 700; }
+
+/* Tables */
+.tables-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.table-card { background: white; border: 1px solid #E8ECF2; border-radius: 10px; padding: 20px; }
+.th { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.th-title { font-size: 12px; font-weight: 700; color: #1C2340; }
+.badge { font-size: 10px; font-weight: 600; border-radius: 99px; padding: 2px 8px; }
+.p-row { display: flex; align-items: center; gap: 9px; padding: 7px 0; border-bottom: 1px solid #F4F6FA; }
+.p-row:last-child { border-bottom: none; }
+.av { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+.p-info { flex: 1; min-width: 0; }
+.p-name { font-size: 11px; font-weight: 600; color: #1C2340; }
+.p-role { font-size: 10px; color: #9CA3AF; margin-top: 1px; }
+.uw { display: flex; align-items: center; gap: 7px; }
+.ub { width: 56px; height: 4px; background: #F4F6FA; border-radius: 2px; overflow: hidden; }
+.uf { height: 100%; border-radius: 2px; }
+.upct { font-size: 10px; font-weight: 700; width: 32px; text-align: right; }
+.free-tag { font-size: 10px; font-weight: 600; border-radius: 6px; padding: 3px 8px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <div class="logo-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </div>
+      <span class="logo-name">SPM Portal</span>
+    </div>
+    <span class="logo-sub">Resource Allocation</span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Analytics</div>
+    <div class="nav-item active">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-section">Management</div>
+    <div class="nav-item">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M22 12h-2M19.07 19.07l-1.41-1.41M12 22v-2M4.93 19.07l1.41-1.41M2 12h2M4.93 4.93l1.41 1.41"/></svg>
+      Manage Allocations
+    </div>
+    <div class="nav-item">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      Bulk Allocations
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="avatar-sm">AS</div>
+    <div><div class="user-name">Admin User</div><div class="user-role">Portfolio Manager</div></div>
+    <div class="status-dot"></div>
+  </div>
+</aside>
+
+<!-- CONTENT -->
+<div class="content">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="page-breadcrumb">
+      Dashboard <span class="bc-sep">/</span>
+      <span class="bc-sub">Resource Overview</span>
+    </div>
+    <div class="topbar-right">
+      <span class="date-range">Jan 1 – Dec 31, 2025</span>
+      <span class="live-badge"><span class="lb-dot"></span>ServiceNow</span>
+      <button class="btn-ppt">↓ Export PPT</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- FILTERS -->
+    <div class="filter-bar">
+      <div class="fi"><label>Team (Manager)</label><select><option>All Teams</option></select></div>
+      <div class="fi"><label>Scope</label><select><option>All Orgs</option></select></div>
+      <div class="fi"><label>Start Date</label><input type="date" value="2025-01-01" /></div>
+      <div class="fi"><label>End Date</label><input type="date" value="2025-12-31" /></div>
+      <div class="fa"><button class="fa-export">↓ PNG</button><button class="fa-apply">Apply</button></div>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="kpi-icon" style="background:#EEF2FF"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="kpi-body"><div class="kpi-label">Total People</div><div class="kpi-val">247</div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-icon" style="background:#F0FDF4"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+        <div class="kpi-body"><div class="kpi-label">Active Projects</div><div class="kpi-val">18</div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-icon" style="background:#EFF6FF"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B6EE8" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+        <div class="kpi-body"><div class="kpi-label">Assignments</div><div class="kpi-val">341</div></div>
+      </div>
+      <div class="kpi" style="border-color:#FECACA">
+        <div class="kpi-icon" style="background:#FEF2F2"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+        <div class="kpi-body"><div class="kpi-label" style="color:#DC2626">Unassigned</div><div class="kpi-val" style="color:#DC2626">12</div></div>
+      </div>
+    </div>
+
+    <!-- CHARTS ROW 1 -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="ch"><span class="ch-title">Team Size by Project</span><button class="ch-dl">↓ PNG</button></div>
+        <div class="hbar">
+          <div class="hb-row"><span class="hb-label">Digital Transformation</span><div class="hb-track"><div class="hb-fill" style="width:85%;background:#3B6EE8"></div></div><span class="hb-num">42</span></div>
+          <div class="hb-row"><span class="hb-label">Cloud Migration</span><div class="hb-track"><div class="hb-fill" style="width:70%;background:#6D28D9"></div></div><span class="hb-num">35</span></div>
+          <div class="hb-row"><span class="hb-label">ERP Modernisation</span><div class="hb-track"><div class="hb-fill" style="width:58%;background:#0E7490"></div></div><span class="hb-num">29</span></div>
+          <div class="hb-row"><span class="hb-label">CRM Rollout</span><div class="hb-track"><div class="hb-fill" style="width:44%;background:#15803D"></div></div><span class="hb-num">22</span></div>
+          <div class="hb-row"><span class="hb-label">Data Analytics</span><div class="hb-track"><div class="hb-fill" style="width:36%;background:#B45309"></div></div><span class="hb-num">18</span></div>
+          <div class="hb-row"><span class="hb-label">Security Upgrade</span><div class="hb-track"><div class="hb-fill" style="width:24%;background:#B91C1C"></div></div><span class="hb-num">12</span></div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="ch"><span class="ch-title">Utilization Distribution</span><button class="ch-dl">↓ PNG</button></div>
+        <div class="donut-wrap">
+          <svg width="140" height="140" viewBox="0 0 140 140">
+            <circle cx="70" cy="70" r="52" fill="none" stroke="#F4F6FA" stroke-width="22"/>
+            <circle cx="70" cy="70" r="52" fill="none" stroke="#3B6EE8" stroke-width="22" stroke-dasharray="196 131" stroke-dashoffset="0" transform="rotate(-90 70 70)"/>
+            <circle cx="70" cy="70" r="52" fill="none" stroke="#16A34A" stroke-width="22" stroke-dasharray="98 229" stroke-dashoffset="-196" transform="rotate(-90 70 70)"/>
+            <circle cx="70" cy="70" r="52" fill="none" stroke="#F59E0B" stroke-width="22" stroke-dasharray="49 278" stroke-dashoffset="-294" transform="rotate(-90 70 70)"/>
+            <circle cx="70" cy="70" r="52" fill="none" stroke="#DC2626" stroke-width="22" stroke-dasharray="24 303" stroke-dashoffset="-343" transform="rotate(-90 70 70)"/>
+            <text x="70" y="65" text-anchor="middle" font-size="18" font-weight="800" fill="#1C2340" font-family="Manrope">247</text>
+            <text x="70" y="80" text-anchor="middle" font-size="8" fill="#9CA3AF" font-family="Manrope" letter-spacing="1">PEOPLE</text>
+          </svg>
+          <div class="leg">
+            <div class="leg-row"><span class="leg-sq" style="background:#3B6EE8"></span>76–100%<span class="leg-val">92</span></div>
+            <div class="leg-row"><span class="leg-sq" style="background:#16A34A"></span>50–75%<span class="leg-val">46</span></div>
+            <div class="leg-row"><span class="leg-sq" style="background:#F59E0B"></span>Under 50%<span class="leg-val">23</span></div>
+            <div class="leg-row"><span class="leg-sq" style="background:#DC2626"></span>Over-alloc<span class="leg-val">11</span></div>
+            <div class="leg-row"><span class="leg-sq" style="background:#E8ECF2"></span>Unallocated<span class="leg-val">12</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHARTS ROW 2 -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="ch"><span class="ch-title">Avg. Utilization by Department</span><button class="ch-dl">↓ PNG</button></div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:#6B7280;width:110px;text-align:right;flex-shrink:0">Engineering</span><div style="flex:1;background:#F4F6FA;border-radius:4px;height:18px;overflow:hidden"><div style="width:87%;height:100%;background:#3B6EE8;border-radius:4px"></div></div><span style="font-size:10px;font-weight:700;color:#3B6EE8;width:32px">87%</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:#6B7280;width:110px;text-align:right;flex-shrink:0">Architecture</span><div style="flex:1;background:#F4F6FA;border-radius:4px;height:18px;overflow:hidden"><div style="width:74%;height:100%;background:#6D28D9;border-radius:4px"></div></div><span style="font-size:10px;font-weight:700;color:#6D28D9;width:32px">74%</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:#6B7280;width:110px;text-align:right;flex-shrink:0">PMO</span><div style="flex:1;background:#F4F6FA;border-radius:4px;height:18px;overflow:hidden"><div style="width:68%;height:100%;background:#0E7490;border-radius:4px"></div></div><span style="font-size:10px;font-weight:700;color:#0E7490;width:32px">68%</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:#6B7280;width:110px;text-align:right;flex-shrink:0">Security</span><div style="flex:1;background:#F4F6FA;border-radius:4px;height:18px;overflow:hidden"><div style="width:55%;height:100%;background:#15803D;border-radius:4px"></div></div><span style="font-size:10px;font-weight:700;color:#15803D;width:32px">55%</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:#6B7280;width:110px;text-align:right;flex-shrink:0">Data & Analytics</span><div style="flex:1;background:#F4F6FA;border-radius:4px;height:18px;overflow:hidden"><div style="width:48%;height:100%;background:#B45309;border-radius:4px"></div></div><span style="font-size:10px;font-weight:700;color:#B45309;width:32px">48%</span></div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="ch"><span class="ch-title">Headcount by Role / Skill Type</span><button class="ch-dl">↓ PNG</button></div>
+        <div class="hbar">
+          <div class="hb-row"><span class="hb-label">Senior Engineer</span><div class="hb-track"><div class="hb-fill" style="width:80%;background:#15803D"></div></div><span class="hb-num">48</span></div>
+          <div class="hb-row"><span class="hb-label">Project Manager</span><div class="hb-track"><div class="hb-fill" style="width:62%;background:#15803D"></div></div><span class="hb-num">37</span></div>
+          <div class="hb-row"><span class="hb-label">Business Analyst</span><div class="hb-track"><div class="hb-fill" style="width:48%;background:#15803D"></div></div><span class="hb-num">29</span></div>
+          <div class="hb-row"><span class="hb-label">Solution Architect</span><div class="hb-track"><div class="hb-fill" style="width:38%;background:#15803D"></div></div><span class="hb-num">23</span></div>
+          <div class="hb-row"><span class="hb-label">QA Engineer</span><div class="hb-track"><div class="hb-fill" style="width:28%;background:#15803D"></div></div><span class="hb-num">17</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLES -->
+    <div class="tables-row">
+      <div class="table-card">
+        <div class="th"><span class="th-title">Highest Utilization</span><span class="badge" style="background:#FEF2F2;color:#DC2626">6 alerts</span></div>
+        <div class="p-row"><div class="av" style="background:#FEF2F2;color:#DC2626;border-radius:8px">JD</div><div class="p-info"><div class="p-name">James Davidson</div><div class="p-role">Senior Engineer · 4 projects</div></div><div class="uw"><div class="ub"><div class="uf" style="width:100%;background:#DC2626"></div></div><span class="upct" style="color:#DC2626">124%</span></div></div>
+        <div class="p-row"><div class="av" style="background:#FEF2F2;color:#DC2626;border-radius:8px">SM</div><div class="p-info"><div class="p-name">Sarah Mitchell</div><div class="p-role">Solution Architect · 3 projects</div></div><div class="uw"><div class="ub"><div class="uf" style="width:95%;background:#DC2626"></div></div><span class="upct" style="color:#DC2626">117%</span></div></div>
+        <div class="p-row"><div class="av" style="background:#FFF7ED;color:#EA580C;border-radius:8px">AK</div><div class="p-info"><div class="p-name">Arjun Kumar</div><div class="p-role">Project Manager · 3 projects</div></div><div class="uw"><div class="ub"><div class="uf" style="width:88%;background:#EA580C"></div></div><span class="upct" style="color:#EA580C">108%</span></div></div>
+        <div class="p-row"><div class="av" style="background:#FFF7ED;color:#EA580C;border-radius:8px">LC</div><div class="p-info"><div class="p-name">Laura Chen</div><div class="p-role">Business Analyst · 3 projects</div></div><div class="uw"><div class="ub"><div class="uf" style="width:80%;background:#D97706"></div></div><span class="upct" style="color:#D97706">95%</span></div></div>
+        <div class="p-row"><div class="av" style="background:#FEFCE8;color:#CA8A04;border-radius:8px">TW</div><div class="p-info"><div class="p-name">Tom Williams</div><div class="p-role">Senior Engineer · 2 projects</div></div><div class="uw"><div class="ub"><div class="uf" style="width:75%;background:#CA8A04"></div></div><span class="upct" style="color:#CA8A04">91%</span></div></div>
+      </div>
+      <div class="table-card">
+        <div class="th"><span class="th-title">Available Capacity</span><span class="badge" style="background:#F0FDF4;color:#16A34A">35 available</span></div>
+        <div class="p-row"><div class="av" style="background:#F0FDF4;color:#16A34A;border-radius:8px">PR</div><div class="p-info"><div class="p-name">Priya Rajan</div><div class="p-role">QA Engineer · Engineering</div></div><span class="free-tag" style="background:#F0FDF4;color:#16A34A">100% free</span></div>
+        <div class="p-row"><div class="av" style="background:#F0FDF4;color:#16A34A;border-radius:8px">MO</div><div class="p-info"><div class="p-name">Marcus O'Brien</div><div class="p-role">Business Analyst · PMO</div></div><span class="free-tag" style="background:#F0FDF4;color:#16A34A">100% free</span></div>
+        <div class="p-row"><div class="av" style="background:#F0FDF4;color:#16A34A;border-radius:8px">FT</div><div class="p-info"><div class="p-name">Fatima Tran</div><div class="p-role">Senior Engineer · Security</div></div><span class="free-tag" style="background:#F0FDF4;color:#16A34A">75% free</span></div>
+        <div class="p-row"><div class="av" style="background:#F0FDF4;color:#16A34A;border-radius:8px">RG</div><div class="p-info"><div class="p-name">Roberto Garcia</div><div class="p-role">Project Manager · Architecture</div></div><span class="free-tag" style="background:#F0FDF4;color:#16A34A">60% free</span></div>
+        <div class="p-row"><div class="av" style="background:#F0FDF4;color:#16A34A;border-radius:8px">EL</div><div class="p-info"><div class="p-name">Emma Larsson</div><div class="p-role">Data Analyst · Data & Analytics</div></div><span class="free-tag" style="background:#F0FDF4;color:#16A34A">50% free</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

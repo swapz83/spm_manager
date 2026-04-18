@@ -9,9 +9,10 @@ import { api } from '@/lib/api';
 import type { PendingChange } from '@/components/ManageView';
 import { ReviewView } from '@/components/ReviewView';
 import {
-  Search, Loader2, ExternalLink, X, Check, Calendar,
+  Search, Loader2, ExternalLink, X, Check,
   AlertTriangle, Users, FolderKanban, Zap, Trash2, Eye, SlidersHorizontal,
 } from 'lucide-react';
+import { DateRangePicker } from '@/components/DateRangePicker';
 
 /* ─── Allocation algorithm from spm_update.js ─── */
 function computeAllocations(projectCount: number): number[] {
@@ -69,16 +70,12 @@ const STATE_BADGES: Record<string, { label: string; className: string }> = {
 
 export function BulkAllocationsView() {
   /* ── Shared filter state (persists across tabs) ── */
-  const { applied, draft, setDraft, apply } = useFilters();
+  const { applied, draft, setDraft, apply, applyWith } = useFilters();
   const draftManager = draft.manager;
-  const draftStartDate = draft.startDate;
-  const draftEndDate = draft.endDate;
   const appliedManager = applied.manager || undefined;
   const startDate = applied.startDate;
   const endDate = applied.endDate;
   const setDraftManager = (v: string) => setDraft({ manager: v });
-  const setDraftStartDate = (v: string) => setDraft({ startDate: v });
-  const setDraftEndDate = (v: string) => setDraft({ endDate: v });
 
   /* ── People multi-select ── */
   const [selectedPeople, setSelectedPeople] = useState<Set<string>>(new Set());
@@ -277,19 +274,20 @@ export function BulkAllocationsView() {
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-6">
       {/* ── Filter Card ── */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 mb-6">
-        <div className="flex items-center gap-2 mb-4">
-          <SlidersHorizontal className="w-4 h-4 text-slate-400" />
-          <h3 className="text-sm font-semibold text-slate-700">Filters</h3>
-        </div>
-        <div className="flex items-end gap-4 flex-wrap">
+      <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(17,24,39,0.06),0_2px_8px_rgba(17,24,39,0.04)] p-5 mb-5">
+        <div className="flex items-center gap-6 flex-wrap">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-gray-400" />
+            <span className="text-[10px] font-bold tracking-[0.1em] uppercase text-gray-400">Filters</span>
+          </div>
+          <div className="h-5 w-px bg-gray-100 flex-shrink-0" />
           {/* Manager */}
-          <div className="flex-1 min-w-[200px]">
-            <label className="text-xs font-medium text-slate-500 mb-1 block">Manager</label>
+          <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
+            <label className="text-[10px] font-bold tracking-[0.08em] uppercase text-gray-400">Manager / Team</label>
             <select
               value={draftManager}
               onChange={e => setDraftManager(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-700 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">All Managers</option>
               {managers?.map((m: any) => (
@@ -299,50 +297,36 @@ export function BulkAllocationsView() {
               ))}
             </select>
           </div>
-          <div className="min-w-[180px]">
-            <label className="text-xs font-medium text-slate-500 mb-1 block">Scope</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-bold tracking-[0.08em] uppercase text-gray-400">Scope</label>
             <label className={cn(
-              'flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white select-none h-[42px]',
-              draftManager ? 'text-slate-700 cursor-pointer hover:bg-slate-50' : 'text-slate-300 cursor-not-allowed'
+              'flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-50 select-none h-[34px]',
+              draftManager ? 'text-gray-700 cursor-pointer hover:bg-white' : 'text-gray-300 cursor-not-allowed'
             )}>
               <input
                 type="checkbox"
                 checked={draft.includeSubOrgs}
                 disabled={!draftManager}
                 onChange={e => setDraft({ includeSubOrgs: e.target.checked })}
-                className="w-4 h-4 rounded border-slate-300 accent-blue-600"
+                className="w-3.5 h-3.5 rounded border-gray-300 accent-blue-600"
               />
-              Include sub-orgs
+              <span className="text-xs">Include sub-orgs</span>
             </label>
           </div>
-          {/* Start Date */}
-          <div className="min-w-[160px]">
-            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-500 mb-1">
-              <Calendar className="w-3 h-3" /> Start Date
-            </label>
-            <input
-              type="date"
-              value={draftStartDate}
-              onChange={e => setDraftStartDate(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            />
-          </div>
-          {/* End Date */}
-          <div className="min-w-[160px]">
-            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-500 mb-1">
-              <Calendar className="w-3 h-3" /> End Date
-            </label>
-            <input
-              type="date"
-              value={draftEndDate}
-              onChange={e => setDraftEndDate(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            />
-          </div>
+          {/* Date range picker */}
+          <DateRangePicker
+            startDate={draft.startDate}
+            endDate={draft.endDate}
+            onChange={(s, e) => {
+              applyWith({ startDate: s, endDate: e });
+              setSelectedPeople(new Set());
+              setSeededFromQuery(false);
+            }}
+          />
           {/* Apply */}
           <button
             onClick={handleApplyFilters}
-            className="px-5 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="px-4 py-1.5 bg-[#1A56DB] text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"
           >
             Apply
           </button>
@@ -350,7 +334,7 @@ export function BulkAllocationsView() {
       </div>
 
       {/* ── Warning Banner ── */}
-      <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+      <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg p-4 mb-5">
         <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
         <div>
           <p className="text-sm font-medium text-amber-800">Bulk allocation replaces existing assignments</p>
@@ -362,24 +346,24 @@ export function BulkAllocationsView() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* ══════ LEFT: People ══════ */}
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(17,24,39,0.06),0_2px_8px_rgba(17,24,39,0.04)] overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-slate-400" />
-              <h3 className="text-sm font-semibold text-slate-700">People</h3>
+              <Users className="w-3.5 h-3.5 text-gray-400" />
+              <h3 className="text-[13px] font-semibold text-gray-800">People</h3>
               {selectedPeople.size > 0 && (
-                <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                <span className="text-xs font-semibold text-[#1A56DB] bg-blue-50 px-2 py-0.5 rounded-full">
                   {selectedPeople.size} selected
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               {people && people.length > 0 && (
                 <button
                   onClick={selectedPeople.size === people.length ? clearPeopleSelection : selectAllPeople}
-                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-xs text-[#1A56DB] hover:text-blue-700 font-semibold"
                 >
                   {selectedPeople.size === people.length ? 'Deselect All' : 'Select All'}
                 </button>
@@ -387,7 +371,7 @@ export function BulkAllocationsView() {
               {selectedPeople.size > 0 && (
                 <button
                   onClick={clearPeopleSelection}
-                  className="flex items-center gap-1 text-xs text-slate-500 hover:text-red-500 transition-colors"
+                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-500 transition-colors"
                 >
                   <X className="w-3 h-3" /> Clear
                 </button>
@@ -398,10 +382,10 @@ export function BulkAllocationsView() {
           <div className="p-4 max-h-[60vh] overflow-y-auto">
             {loadingPeople ? (
               <div className="text-center py-12">
-                <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-500" />
+                <Loader2 className="w-6 h-6 animate-spin mx-auto text-[#1A56DB]" />
               </div>
             ) : !people || people.length === 0 ? (
-              <div className="text-center py-12 text-slate-400">
+              <div className="text-center py-12 text-gray-400">
                 <p className="text-sm">No people found</p>
               </div>
             ) : (
@@ -413,32 +397,32 @@ export function BulkAllocationsView() {
                       key={person.sys_id}
                       onClick={() => togglePerson(person.sys_id)}
                       className={cn(
-                        'w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left',
+                        'w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left',
                         isSelected
-                          ? 'border-blue-400 bg-blue-50 ring-2 ring-blue-200'
-                          : 'border-slate-200 hover:border-slate-300 hover:shadow-sm bg-white',
+                          ? 'border-blue-300 bg-blue-50 ring-1 ring-blue-200'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 bg-white',
                       )}
                     >
                       {/* Checkbox */}
                       <div className={cn(
-                        'w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors',
-                        isSelected ? 'bg-blue-500 border-blue-500' : 'border-slate-300',
+                        'w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors',
+                        isSelected ? 'bg-[#1A56DB] border-[#1A56DB]' : 'border-gray-300',
                       )}>
-                        {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                        {isSelected && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
                       </div>
                       {/* Avatar */}
                       <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-semibold flex-shrink-0"
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-semibold flex-shrink-0"
                         style={{ backgroundColor: stringToColor(person.first_name + person.last_name) }}
                       >
                         {getInitials(person.first_name, person.last_name)}
                       </div>
                       {/* Name */}
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-slate-900 truncate">
+                        <div className="text-sm font-medium text-gray-900 truncate">
                           {person.first_name} {person.last_name}
                         </div>
-                        <div className="text-xs text-slate-500 truncate">{person.title}</div>
+                        <div className="text-xs text-gray-500 truncate">{person.title}</div>
                       </div>
                       {/* Current allocation for the date range */}
                       {person.total_allocation > 0 && (
@@ -446,7 +430,7 @@ export function BulkAllocationsView() {
                           'text-xs font-semibold px-2 py-0.5 rounded-md',
                           person.total_allocation > 100
                             ? 'text-red-600 bg-red-50'
-                            : 'text-slate-500 bg-slate-100',
+                            : 'text-gray-500 bg-gray-100',
                         )}>
                           {person.total_allocation}%
                         </span>
@@ -460,20 +444,20 @@ export function BulkAllocationsView() {
         </div>
 
         {/* ══════ RIGHT: Projects ══════ */}
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(17,24,39,0.06),0_2px_8px_rgba(17,24,39,0.04)] overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <FolderKanban className="w-4 h-4 text-slate-400" />
-              <h3 className="text-sm font-semibold text-slate-700">Projects</h3>
+              <FolderKanban className="w-3.5 h-3.5 text-gray-400" />
+              <h3 className="text-[13px] font-semibold text-gray-800">Projects</h3>
               {selectedProjects.length > 0 && (
-                <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                <span className="text-xs font-semibold text-[#1A56DB] bg-blue-50 px-2 py-0.5 rounded-full">
                   {selectedProjects.length} selected
                 </span>
               )}
             </div>
             <button
               onClick={() => setShowProjectSearch(true)}
-              className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+              className="flex items-center gap-1.5 text-xs font-semibold text-[#1A56DB] hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
             >
               <Search className="w-3 h-3" />
               Add from ServiceNow
@@ -483,10 +467,10 @@ export function BulkAllocationsView() {
           <div className="p-4 max-h-[60vh] overflow-y-auto">
             {loadingProjects ? (
               <div className="text-center py-12">
-                <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-500" />
+                <Loader2 className="w-6 h-6 animate-spin mx-auto text-[#1A56DB]" />
               </div>
             ) : selectedProjects.length === 0 ? (
-              <div className="text-center py-12 text-slate-400">
+              <div className="text-center py-12 text-gray-400">
                 <FolderKanban className="w-10 h-10 mx-auto mb-3 opacity-40" />
                 <p className="text-sm">No projects found</p>
                 <p className="text-xs mt-1">Search and add projects from ServiceNow</p>
@@ -499,21 +483,21 @@ export function BulkAllocationsView() {
                   return (
                     <div
                       key={proj.sys_id}
-                      className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-white group"
+                      className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white group hover:bg-gray-50 transition-colors"
                     >
-                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: proj.color || '#94a3b8' }} />
+                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: proj.color || '#94a3b8' }} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono text-slate-400">{proj.number}</span>
+                          <span className="text-[11px] font-mono text-gray-400">{proj.number}</span>
                           <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${badge.className}`}>
                             {badge.label}
                           </span>
                         </div>
-                        <div className="text-sm font-medium text-slate-800 truncate">{proj.short_description}</div>
+                        <div className="text-sm font-medium text-gray-800 truncate">{proj.short_description}</div>
                       </div>
                       {/* Allocation preview */}
                       {alloc && selectedPeople.size > 0 && (
-                        <span className="text-sm font-bold text-blue-600 tabular-nums">
+                        <span className="text-sm font-bold text-[#1A56DB] tabular-nums">
                           {alloc.allocation_pct}%
                         </span>
                       )}
@@ -532,12 +516,12 @@ export function BulkAllocationsView() {
 
           {/* Allocation summary */}
           {allocationPreview && selectedPeople.size > 0 && (
-            <div className="px-5 py-3 border-t border-slate-100 bg-slate-50">
+            <div className="px-5 py-3 border-t border-gray-100 bg-gray-50">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-500">
+                <span className="text-gray-500">
                   Each person &rarr; {selectedProjects.length} project{selectedProjects.length !== 1 ? 's' : ''}
                 </span>
-                <span className="font-semibold text-slate-700">
+                <span className="font-semibold text-gray-700">
                   Total: {allocationPreview.reduce((s, p) => s + p.allocation_pct, 0)}%
                 </span>
               </div>
@@ -545,7 +529,7 @@ export function BulkAllocationsView() {
                 {allocationPreview.map(p => (
                   <div
                     key={p.sys_id}
-                    className="h-2 rounded-full"
+                    className="h-1.5 rounded-full"
                     style={{
                       backgroundColor: p.color || '#94a3b8',
                       width: `${p.allocation_pct}%`,
@@ -559,13 +543,13 @@ export function BulkAllocationsView() {
       </div>
 
       {/* ── Generate / Review Button ── */}
-      <div className="mt-6 flex items-center justify-between">
-        <div className="text-sm text-slate-500">
+      <div className="mt-5 flex items-center justify-between">
+        <div className="text-sm text-gray-500">
           {selectedPeople.size > 0 && selectedProjects.length > 0 ? (
             <>
-              <strong>{selectedPeople.size}</strong> {selectedPeople.size === 1 ? 'person' : 'people'} &times;{' '}
-              <strong>{selectedProjects.length}</strong> {selectedProjects.length === 1 ? 'project' : 'projects'} ={' '}
-              <strong>{selectedPeople.size * selectedProjects.length}</strong> new assignments
+              <strong className="text-gray-800">{selectedPeople.size}</strong> {selectedPeople.size === 1 ? 'person' : 'people'} &times;{' '}
+              <strong className="text-gray-800">{selectedProjects.length}</strong> {selectedProjects.length === 1 ? 'project' : 'projects'} ={' '}
+              <strong className="text-[#1A56DB]">{selectedPeople.size * selectedProjects.length}</strong> new assignments
             </>
           ) : (
             'Select people and projects to generate bulk allocations'
@@ -575,10 +559,10 @@ export function BulkAllocationsView() {
           onClick={handleGenerate}
           disabled={!canGenerate}
           className={cn(
-            'flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-colors shadow-sm',
+            'flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm',
             canGenerate
-              ? 'bg-blue-600 text-white hover:bg-blue-700'
-              : 'bg-slate-200 text-slate-400 cursor-not-allowed',
+              ? 'bg-[#1A56DB] text-white hover:bg-blue-700'
+              : 'bg-gray-200 text-gray-400 cursor-not-allowed',
           )}
         >
           <Eye className="w-4 h-4" />
@@ -668,37 +652,37 @@ function ProjectSearchDialog({
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="p-6 pb-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-900">Add Projects from ServiceNow</h3>
-            <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded-lg transition-colors">
-              <X className="w-5 h-5 text-slate-400" />
+            <h3 className="text-[15px] font-semibold text-gray-900">Add Projects from ServiceNow</h3>
+            <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+              <X className="w-4 h-4 text-gray-400" />
             </button>
           </div>
           <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
             <input
               ref={inputRef}
               type="text"
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Search by project number (PRJ...) or name..."
-              className="w-full pl-11 pr-10 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50"
+              className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
             />
             {isSearching && (
-              <Loader2 className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500 animate-spin" />
+              <Loader2 className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1A56DB] animate-spin" />
             )}
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
           {!hasSearched && !isSearching && (
-            <div className="text-center py-12 text-slate-400">
+            <div className="text-center py-12 text-gray-400">
               <Search className="w-10 h-10 mx-auto mb-3 opacity-40" />
               <p className="text-sm">Type at least 2 characters to search</p>
             </div>
           )}
 
           {hasSearched && results.length === 0 && !isSearching && (
-            <div className="text-center py-12 text-slate-400">
+            <div className="text-center py-12 text-gray-400">
               <FolderKanban className="w-10 h-10 mx-auto mb-3 opacity-40" />
               <p className="text-sm">No projects found for &ldquo;{query}&rdquo;</p>
             </div>
@@ -706,7 +690,7 @@ function ProjectSearchDialog({
 
           {results.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.08em] mb-3">
                 {results.length} project{results.length !== 1 ? 's' : ''} found
               </p>
               {results.map((project: any) => {
@@ -718,40 +702,40 @@ function ProjectSearchDialog({
                     onClick={() => !alreadyAdded && handleAdd(project)}
                     disabled={alreadyAdded}
                     className={cn(
-                      'w-full text-left p-4 rounded-xl border transition-all group',
+                      'w-full text-left p-4 rounded-lg border transition-all group',
                       alreadyAdded
                         ? 'border-green-200 bg-green-50/50 opacity-70'
-                        : 'border-slate-200 hover:border-blue-300 hover:bg-blue-50/50',
+                        : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/30',
                     )}
                   >
                     <div className="flex items-start gap-3">
-                      <div className="w-3 h-3 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: project.color || '#94a3b8' }} />
+                      <div className="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: project.color || '#94a3b8' }} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-mono font-medium text-slate-500">{project.number}</span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badge.className}`}>
+                          <span className="text-[11px] font-mono font-medium text-gray-500">{project.number}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${badge.className}`}>
                             {badge.label}
                           </span>
                           {project.source === 'servicenow' && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium flex items-center gap-1">
-                              <ExternalLink className="w-3 h-3" /> SN
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 text-[#1A56DB] font-medium flex items-center gap-1">
+                              <ExternalLink className="w-2.5 h-2.5" /> SN
                             </span>
                           )}
                         </div>
-                        <p className="text-sm font-medium text-slate-800 truncate">{project.short_description}</p>
+                        <p className="text-sm font-medium text-gray-800 truncate">{project.short_description}</p>
                         {(project.start_date || project.end_date) && (
-                          <p className="text-xs text-slate-400 mt-1">
+                          <p className="text-xs text-gray-400 mt-1">
                             {project.start_date?.split('T')[0]?.split(' ')[0]} &mdash; {project.end_date?.split('T')[0]?.split(' ')[0]}
                           </p>
                         )}
                       </div>
                       <div className="flex-shrink-0">
                         {alreadyAdded ? (
-                          <span className="text-xs font-medium text-green-600 bg-green-50 px-3 py-1.5 rounded-lg flex items-center gap-1">
+                          <span className="text-xs font-semibold text-green-600 bg-green-50 px-3 py-1.5 rounded-lg flex items-center gap-1">
                             <Check className="w-3 h-3" /> Added
                           </span>
                         ) : (
-                          <span className="text-xs font-medium text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="text-xs font-semibold text-[#1A56DB] bg-blue-50 px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
                             Add
                           </span>
                         )}
@@ -764,10 +748,10 @@ function ProjectSearchDialog({
           )}
         </div>
 
-        <div className="px-6 py-3 border-t border-slate-200 bg-slate-50 flex justify-end">
+        <div className="px-6 py-3 border-t border-gray-200 bg-gray-50 flex justify-end">
           <button
             onClick={onClose}
-            className="px-5 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="px-5 py-2 bg-[#1A56DB] text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
           >
             Done
           </button>

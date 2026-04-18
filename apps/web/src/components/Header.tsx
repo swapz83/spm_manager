@@ -1,9 +1,9 @@
 'use client';
-import { BarChart3, Settings2, FolderKanban, Cloud, Database, Zap } from 'lucide-react';
+import { BarChart3, Settings2, FolderKanban, Cloud, Database, Zap, SlidersHorizontal } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 
-export type AppMode = 'dashboard' | 'manage' | 'bulk';
+export type AppMode = 'dashboard' | 'manage' | 'bulk' | 'config';
 
 interface HeaderProps {
   mode: AppMode;
@@ -19,52 +19,68 @@ export function Header({ mode, onModeChange }: HeaderProps) {
 
   const isLive = health?.dataSource === 'servicenow';
 
+  const navItems: { id: AppMode; label: string; icon: React.ReactNode }[] = [
+    { id: 'dashboard', label: 'Dashboard',         icon: <BarChart3 className="w-3.5 h-3.5" /> },
+    { id: 'manage',    label: 'Manage Allocations', icon: <Settings2 className="w-3.5 h-3.5" /> },
+    { id: 'bulk',      label: 'Bulk Allocations',   icon: <Zap className="w-3.5 h-3.5" /> },
+    { id: 'config',    label: 'Settings',           icon: <SlidersHorizontal className="w-3.5 h-3.5" /> },
+  ];
+
   return (
-    <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-      <div className="max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <FolderKanban className="w-7 h-7 text-blue-600" />
-          <h1 className="text-xl font-semibold text-slate-900">Resource Allocation</h1>
-          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">SPM</span>
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <div className="max-w-[1600px] mx-auto px-8 flex items-stretch justify-between h-[60px]">
+
+        {/* Brand */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {/* 2×2 dot logo */}
+          <div
+            className="w-8 h-8 rounded-lg grid grid-cols-2 gap-[3px] p-[7px]"
+            style={{ backgroundColor: '#1A56DB' }}
+          >
+            <div className="bg-white/85 rounded-[2px]" />
+            <div className="bg-white/85 rounded-[2px]" />
+            <div className="bg-white/85 rounded-[2px]" />
+            <div className="bg-white/85 rounded-[2px]" />
+          </div>
+          <div>
+            <div className="text-[14px] font-700 text-gray-900 leading-tight tracking-tight font-bold">
+              Resource Allocation
+            </div>
+            <div className="text-[10px] text-gray-400 leading-tight">Strategic Portfolio Management</div>
+          </div>
+
+          {/* Separator */}
+          <div className="w-px h-6 bg-gray-200 mx-1" />
+
+          {/* Status badge */}
           {health && (
-            <span className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium ${
+            <span className={`flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${
               isLive
-                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                : 'bg-slate-100 text-slate-500 border border-slate-200'
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                : 'bg-gray-100 text-gray-500 border-gray-200'
             }`}>
               {isLive ? <Cloud className="w-3 h-3" /> : <Database className="w-3 h-3" />}
-              {isLive ? 'ServiceNow' : 'Mock Data'}
+              {isLive ? 'ServiceNow Live' : 'Mock Data'}
             </span>
           )}
         </div>
-        <nav className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
-          <button
-            onClick={() => onModeChange('dashboard')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              mode === 'dashboard' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <BarChart3 className="w-4 h-4" />
-            Dashboard
-          </button>
-          <button
-            onClick={() => onModeChange('manage')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              mode === 'manage' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <Settings2 className="w-4 h-4" />
-            Manage Allocations
-          </button>
-          <button
-            onClick={() => onModeChange('bulk')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              mode === 'bulk' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <Zap className="w-4 h-4" />
-            Bulk Allocations
-          </button>
+
+        {/* Tab navigation — underline style */}
+        <nav className="flex items-stretch gap-0">
+          {navItems.map(({ id, label, icon }) => (
+            <button
+              key={id}
+              onClick={() => onModeChange(id)}
+              className={`relative flex items-center gap-2 px-5 text-[13px] font-medium transition-colors border-b-2 ${
+                mode === id
+                  ? 'border-[#1A56DB] text-[#1A56DB]'
+                  : 'border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300'
+              }`}
+            >
+              <span className={mode === id ? 'text-[#1A56DB]' : 'text-gray-400'}>{icon}</span>
+              {label}
+            </button>
+          ))}
         </nav>
       </div>
     </header>

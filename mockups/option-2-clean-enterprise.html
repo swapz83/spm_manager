@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Option 2 — Clean Enterprise</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Plus Jakarta Sans', sans-serif; background: #F7F8FC; color: #111827; min-height: 100vh; }
+
+/* Header */
+.header {
+  background: #fff;
+  border-bottom: 1px solid #E5E7EB;
+  padding: 0 36px;
+  height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.brand { display: flex; align-items: center; gap: 14px; }
+.logo-block { width: 36px; height: 36px; background: #1A56DB; border-radius: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 7px; }
+.logo-dot { background: rgba(255,255,255,0.85); border-radius: 2px; }
+.brand-text { font-size: 15px; font-weight: 700; color: #111827; letter-spacing: -0.02em; }
+.brand-sub { font-size: 11px; color: #9CA3AF; font-weight: 400; }
+.sep { width: 1px; height: 28px; background: #E5E7EB; }
+.data-pill { font-size: 11px; font-weight: 600; color: #059669; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 99px; padding: 4px 10px; display: flex; align-items: center; gap: 5px; }
+.data-dot { width: 6px; height: 6px; border-radius: 50%; background: #059669; }
+.nav { display: flex; align-items: center; }
+.nav-btn { padding: 8px 18px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: transparent; color: #6B7280; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; }
+.nav-btn.active { color: #1A56DB; border-bottom-color: #1A56DB; font-weight: 600; }
+
+/* Main */
+.main { max-width: 1380px; margin: 0 auto; padding: 28px 36px; }
+
+/* Page title */
+.page-meta { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 24px; }
+.page-title { font-size: 22px; font-weight: 800; color: #111827; letter-spacing: -0.03em; }
+.page-sub { font-size: 13px; color: #9CA3AF; font-weight: 400; margin-top: 3px; }
+.btn-row { display: flex; gap: 8px; }
+.btn-primary { background: #1A56DB; color: white; border: none; border-radius: 8px; padding: 9px 18px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.btn-secondary { background: white; color: #374151; border: 1px solid #E5E7EB; border-radius: 8px; padding: 9px 14px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 6px; }
+
+/* Filter bar */
+.filter-bar { background: white; border: 1px solid #E5E7EB; border-radius: 12px; padding: 16px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+.filter-item { display: flex; flex-direction: column; gap: 4px; }
+.filter-item label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #9CA3AF; }
+.filter-item select, .filter-item input {
+  background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 7px;
+  color: #374151; font-size: 12px; padding: 6px 10px; outline: none;
+  font-family: inherit;
+}
+.filter-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.fa-apply { background: #1A56DB; color: white; border: none; border-radius: 7px; padding: 7px 16px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.fa-export { background: white; color: #6B7280; border: 1px solid #E5E7EB; border-radius: 7px; padding: 7px 12px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 5px; }
+
+/* KPI row */
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.kpi-card { background: white; border: 1px solid #E5E7EB; border-radius: 12px; padding: 22px; }
+.kpi-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.kpi-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #9CA3AF; }
+.kpi-chip { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+.kpi-value { font-size: 42px; font-weight: 800; letter-spacing: -0.04em; color: #111827; line-height: 1; }
+.kpi-trend { font-size: 11px; font-weight: 500; color: #9CA3AF; margin-top: 6px; }
+.trend-up { color: #059669; }
+
+/* Charts row */
+.charts-row { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; margin-bottom: 24px; }
+.charts-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+.chart-card { background: white; border: 1px solid #E5E7EB; border-radius: 12px; padding: 22px; }
+.chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.chart-title { font-size: 13px; font-weight: 700; color: #111827; }
+.chart-dl { font-size: 11px; color: #9CA3AF; cursor: pointer; border: 1px solid #E5E7EB; border-radius: 6px; padding: 4px 9px; background: #F9FAFB; display: flex; align-items: center; gap: 4px; }
+
+/* Bar chart */
+.bar-chart { display: flex; flex-direction: column; gap: 10px; }
+.bar-row { display: flex; align-items: center; gap: 10px; }
+.bar-label { font-size: 11px; color: #6B7280; width: 140px; text-align: right; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-track { flex: 1; background: #F3F4F6; border-radius: 6px; height: 20px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 6px; }
+.bar-num { font-size: 11px; font-weight: 600; color: #6B7280; width: 22px; text-align: left; flex-shrink: 0; }
+
+/* Donut */
+.donut-wrap { display: flex; align-items: center; justify-content: center; gap: 24px; }
+.legend-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #6B7280; padding: 5px 0; border-bottom: 1px solid #F3F4F6; }
+.legend-row:last-child { border-bottom: none; }
+.legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.legend-val { margin-left: auto; font-weight: 700; color: #374151; }
+
+/* Dept bars */
+.dept-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.dept-label { font-size: 11px; color: #6B7280; width: 110px; text-align: right; flex-shrink: 0; }
+.dept-track { flex: 1; background: #F3F4F6; border-radius: 6px; height: 22px; overflow: hidden; position: relative; }
+.dept-fill { height: 100%; border-radius: 6px; }
+.dept-pct { font-size: 11px; font-weight: 700; width: 38px; text-align: right; flex-shrink: 0; }
+
+/* Tables row */
+.tables-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.table-card { background: white; border: 1px solid #E5E7EB; border-radius: 12px; padding: 22px; }
+.table-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.table-title { font-size: 13px; font-weight: 700; color: #111827; }
+.count-badge { font-size: 11px; font-weight: 600; border-radius: 99px; padding: 3px 10px; }
+.cb-red { background: #FEF2F2; color: #DC2626; }
+.cb-green { background: #ECFDF5; color: #059669; }
+.p-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #F9FAFB; }
+.p-row:last-child { border-bottom: none; }
+.avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.av-r { background: #FEF2F2; color: #DC2626; }
+.av-g { background: #ECFDF5; color: #059669; }
+.p-info { flex: 1; min-width: 0; }
+.p-name { font-size: 12px; font-weight: 600; color: #111827; }
+.p-role { font-size: 10px; color: #9CA3AF; margin-top: 1px; }
+.util-wrap { display: flex; align-items: center; gap: 8px; }
+.util-bar { width: 60px; height: 4px; background: #F3F4F6; border-radius: 2px; overflow: hidden; }
+.util-fill { height: 100%; border-radius: 2px; }
+.util-val { font-size: 11px; font-weight: 700; width: 34px; text-align: right; }
+.free-tag { font-size: 10px; font-weight: 700; background: #ECFDF5; color: #059669; border-radius: 6px; padding: 3px 8px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="brand">
+    <div class="logo-block">
+      <div class="logo-dot"></div><div class="logo-dot"></div>
+      <div class="logo-dot"></div><div class="logo-dot"></div>
+    </div>
+    <div>
+      <div class="brand-text">Resource Allocation</div>
+      <div class="brand-sub">Strategic Portfolio Management</div>
+    </div>
+    <div class="sep"></div>
+    <span class="data-pill"><span class="data-dot"></span>ServiceNow Live</span>
+  </div>
+  <nav class="nav">
+    <button class="nav-btn active">Dashboard</button>
+    <button class="nav-btn">Manage Allocations</button>
+    <button class="nav-btn">Bulk Allocations</button>
+  </nav>
+</header>
+
+<div class="main">
+  <!-- PAGE META -->
+  <div class="page-meta">
+    <div>
+      <div class="page-title">Resource Dashboard</div>
+      <div class="page-sub">FY 2025 · Jan 1 – Dec 31 · All Teams</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-secondary">↓ Export PPT</button>
+      <button class="btn-primary">Apply Filters</button>
+    </div>
+  </div>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <div class="filter-item">
+      <label>Team (Manager)</label>
+      <select><option>All Teams</option></select>
+    </div>
+    <div class="filter-item">
+      <label>Scope</label>
+      <select><option>All Orgs</option></select>
+    </div>
+    <div class="filter-item">
+      <label>Start Date</label>
+      <input type="date" value="2025-01-01" />
+    </div>
+    <div class="filter-item">
+      <label>End Date</label>
+      <input type="date" value="2025-12-31" />
+    </div>
+    <div class="filter-actions">
+      <button class="fa-export">↓ PPT</button>
+      <button class="fa-apply">Apply</button>
+    </div>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <span class="kpi-label">Total People</span>
+        <div class="kpi-chip" style="background:#EEF2FF"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      </div>
+      <div class="kpi-value">247</div>
+      <div class="kpi-trend"><span class="trend-up">↑ 8%</span> vs last quarter</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <span class="kpi-label">Active Projects</span>
+        <div class="kpi-chip" style="background:#F0FDF4"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+      </div>
+      <div class="kpi-value">18</div>
+      <div class="kpi-trend"><span class="trend-up">↑ 2</span> new this quarter</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <span class="kpi-label">Assignments</span>
+        <div class="kpi-chip" style="background:#EFF6FF"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1A56DB" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+      </div>
+      <div class="kpi-value">341</div>
+      <div class="kpi-trend">Avg 1.4 per person</div>
+    </div>
+    <div class="kpi-card" style="border-color:#FEE2E2">
+      <div class="kpi-top">
+        <span class="kpi-label" style="color:#DC2626">Unassigned</span>
+        <div class="kpi-chip" style="background:#FEF2F2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+      </div>
+      <div class="kpi-value" style="color:#DC2626">12</div>
+      <div class="kpi-trend" style="color:#DC2626">Needs allocation</div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 1 -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Team Size by Project</span>
+        <button class="chart-dl">↓ PNG</button>
+      </div>
+      <div class="bar-chart">
+        <div class="bar-row"><span class="bar-label">Digital Transformation</span><div class="bar-track"><div class="bar-fill" style="width:85%;background:#1A56DB"></div></div><span class="bar-num">42</span></div>
+        <div class="bar-row"><span class="bar-label">Cloud Migration</span><div class="bar-track"><div class="bar-fill" style="width:70%;background:#4F46E5"></div></div><span class="bar-num">35</span></div>
+        <div class="bar-row"><span class="bar-label">ERP Modernisation</span><div class="bar-track"><div class="bar-fill" style="width:58%;background:#0891B2"></div></div><span class="bar-num">29</span></div>
+        <div class="bar-row"><span class="bar-label">CRM Rollout</span><div class="bar-track"><div class="bar-fill" style="width:44%;background:#16A34A"></div></div><span class="bar-num">22</span></div>
+        <div class="bar-row"><span class="bar-label">Data Analytics</span><div class="bar-track"><div class="bar-fill" style="width:36%;background:#D97706"></div></div><span class="bar-num">18</span></div>
+        <div class="bar-row"><span class="bar-label">Security Upgrade</span><div class="bar-track"><div class="bar-fill" style="width:24%;background:#DC2626"></div></div><span class="bar-num">12</span></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Utilization Distribution</span>
+        <button class="chart-dl">↓ PNG</button>
+      </div>
+      <div class="donut-wrap">
+        <svg width="150" height="150" viewBox="0 0 150 150">
+          <circle cx="75" cy="75" r="56" fill="none" stroke="#F3F4F6" stroke-width="24"/>
+          <circle cx="75" cy="75" r="56" fill="none" stroke="#1A56DB" stroke-width="24" stroke-dasharray="211 140" stroke-dashoffset="0" transform="rotate(-90 75 75)"/>
+          <circle cx="75" cy="75" r="56" fill="none" stroke="#16A34A" stroke-width="24" stroke-dasharray="106 245" stroke-dashoffset="-211" transform="rotate(-90 75 75)"/>
+          <circle cx="75" cy="75" r="56" fill="none" stroke="#F59E0B" stroke-width="24" stroke-dasharray="53 298" stroke-dashoffset="-317" transform="rotate(-90 75 75)"/>
+          <circle cx="75" cy="75" r="56" fill="none" stroke="#DC2626" stroke-width="24" stroke-dasharray="26 325" stroke-dashoffset="-370" transform="rotate(-90 75 75)"/>
+          <text x="75" y="70" text-anchor="middle" font-size="20" font-weight="800" fill="#111827" font-family="Plus Jakarta Sans">247</text>
+          <text x="75" y="85" text-anchor="middle" font-size="8" fill="#9CA3AF" font-family="Plus Jakarta Sans" letter-spacing="1">TOTAL</text>
+        </svg>
+        <div style="flex:1">
+          <div class="legend-row"><span class="legend-dot" style="background:#1A56DB"></span>76–100% utilized<span class="legend-val">92</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:#16A34A"></span>50–75% utilized<span class="legend-val">46</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:#F59E0B"></span>Under 50%<span class="legend-val">23</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:#DC2626"></span>Over-allocated<span class="legend-val">11</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:#E5E7EB"></span>Unallocated<span class="legend-val">12</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 2 -->
+  <div class="charts-row-2">
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Avg. Utilization by Department</span>
+        <button class="chart-dl">↓ PNG</button>
+      </div>
+      <div class="dept-row"><span class="dept-label">Engineering</span><div class="dept-track"><div class="dept-fill" style="width:87%;background:#1A56DB"></div></div><span class="dept-pct" style="color:#1A56DB">87%</span></div>
+      <div class="dept-row"><span class="dept-label">Architecture</span><div class="dept-track"><div class="dept-fill" style="width:74%;background:#4F46E5"></div></div><span class="dept-pct" style="color:#4F46E5">74%</span></div>
+      <div class="dept-row"><span class="dept-label">PMO</span><div class="dept-track"><div class="dept-fill" style="width:68%;background:#0891B2"></div></div><span class="dept-pct" style="color:#0891B2">68%</span></div>
+      <div class="dept-row"><span class="dept-label">Security</span><div class="dept-track"><div class="dept-fill" style="width:55%;background:#16A34A"></div></div><span class="dept-pct" style="color:#16A34A">55%</span></div>
+      <div class="dept-row"><span class="dept-label">Data & Analytics</span><div class="dept-track"><div class="dept-fill" style="width:48%;background:#D97706"></div></div><span class="dept-pct" style="color:#D97706">48%</span></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Headcount by Role / Skill Type</span>
+        <button class="chart-dl">↓ PNG</button>
+      </div>
+      <div class="bar-chart">
+        <div class="bar-row"><span class="bar-label">Senior Engineer</span><div class="bar-track"><div class="bar-fill" style="width:80%;background:#16A34A"></div></div><span class="bar-num">48</span></div>
+        <div class="bar-row"><span class="bar-label">Project Manager</span><div class="bar-track"><div class="bar-fill" style="width:62%;background:#16A34A"></div></div><span class="bar-num">37</span></div>
+        <div class="bar-row"><span class="bar-label">Business Analyst</span><div class="bar-track"><div class="bar-fill" style="width:48%;background:#16A34A"></div></div><span class="bar-num">29</span></div>
+        <div class="bar-row"><span class="bar-label">Solution Architect</span><div class="bar-track"><div class="bar-fill" style="width:38%;background:#16A34A"></div></div><span class="bar-num">23</span></div>
+        <div class="bar-row"><span class="bar-label">QA Engineer</span><div class="bar-track"><div class="bar-fill" style="width:28%;background:#16A34A"></div></div><span class="bar-num">17</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PEOPLE TABLES -->
+  <div class="tables-row">
+    <div class="table-card">
+      <div class="table-hdr">
+        <span class="table-title">Highest Utilization</span>
+        <span class="count-badge cb-red">6 alerts</span>
+      </div>
+      <div class="p-row"><div class="avatar av-r">JD</div><div class="p-info"><div class="p-name">James Davidson</div><div class="p-role">Senior Engineer · 4 projects</div></div><div class="util-wrap"><div class="util-bar"><div class="util-fill" style="width:100%;background:#DC2626"></div></div><span class="util-val" style="color:#DC2626">124%</span></div></div>
+      <div class="p-row"><div class="avatar av-r">SM</div><div class="p-info"><div class="p-name">Sarah Mitchell</div><div class="p-role">Solution Architect · 3 projects</div></div><div class="util-wrap"><div class="util-bar"><div class="util-fill" style="width:95%;background:#DC2626"></div></div><span class="util-val" style="color:#DC2626">117%</span></div></div>
+      <div class="p-row"><div class="avatar av-r">AK</div><div class="p-info"><div class="p-name">Arjun Kumar</div><div class="p-role">Project Manager · 3 projects</div></div><div class="util-wrap"><div class="util-bar"><div class="util-fill" style="width:88%;background:#F97316"></div></div><span class="util-val" style="color:#F97316">108%</span></div></div>
+      <div class="p-row"><div class="avatar av-r">LC</div><div class="p-info"><div class="p-name">Laura Chen</div><div class="p-role">Business Analyst · 3 projects</div></div><div class="util-wrap"><div class="util-bar"><div class="util-fill" style="width:80%;background:#F97316"></div></div><span class="util-val" style="color:#F97316">95%</span></div></div>
+      <div class="p-row"><div class="avatar av-r">TW</div><div class="p-info"><div class="p-name">Tom Williams</div><div class="p-role">Senior Engineer · 2 projects</div></div><div class="util-wrap"><div class="util-bar"><div class="util-fill" style="width:75%;background:#D97706"></div></div><span class="util-val" style="color:#D97706">91%</span></div></div>
+    </div>
+    <div class="table-card">
+      <div class="table-hdr">
+        <span class="table-title">Available Capacity</span>
+        <span class="count-badge cb-green">35 available</span>
+      </div>
+      <div class="p-row"><div class="avatar av-g">PR</div><div class="p-info"><div class="p-name">Priya Rajan</div><div class="p-role">QA Engineer · Engineering</div></div><span class="free-tag">100% free</span></div>
+      <div class="p-row"><div class="avatar av-g">MO</div><div class="p-info"><div class="p-name">Marcus O'Brien</div><div class="p-role">Business Analyst · PMO</div></div><span class="free-tag">100% free</span></div>
+      <div class="p-row"><div class="avatar av-g">FT</div><div class="p-info"><div class="p-name">Fatima Tran</div><div class="p-role">Senior Engineer · Security</div></div><span class="free-tag">75% free</span></div>
+      <div class="p-row"><div class="avatar av-g">RG</div><div class="p-info"><div class="p-name">Roberto Garcia</div><div class="p-role">Project Manager · Architecture</div></div><span class="free-tag">60% free</span></div>
+      <div class="p-row"><div class="avatar av-g">EL</div><div class="p-info"><div class="p-name">Emma Larsson</div><div class="p-role">Data Analyst · Data & Analytics</div></div><span class="free-tag">50% free</span></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Option 4 — Bold Metrics</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Space Grotesk', sans-serif; background: #FAFAFA; color: #111; min-height: 100vh; }
+
+/* Header */
+.header {
+  background: #111;
+  padding: 0 40px;
+  height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.brand { display: flex; align-items: center; gap: 16px; }
+.brand-name { font-size: 15px; font-weight: 700; color: #fff; letter-spacing: -0.02em; }
+.brand-divider { width: 1px; height: 18px; background: #333; }
+.brand-sub { font-size: 11px; color: #555; font-weight: 400; letter-spacing: 0.02em; }
+.live-chip { font-family: 'Space Mono', monospace; font-size: 10px; color: #4ADE80; background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.2); border-radius: 4px; padding: 3px 8px; letter-spacing: 0.05em; }
+.nav { display: flex; gap: 0; }
+.nav-btn { padding: 6px 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: none; background: transparent; color: #555; font-family: 'Space Grotesk', sans-serif; border-bottom: 2px solid transparent; transition: all 0.15s; }
+.nav-btn.active { color: #fff; border-bottom-color: #fff; }
+
+/* Main */
+.main { max-width: 1440px; margin: 0 auto; padding: 28px 40px; }
+
+/* Filter strip */
+.filter-strip {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  background: white; border: 1px solid #E5E5E5; border-radius: 8px;
+  padding: 14px 18px; margin-bottom: 24px;
+}
+.fi { display: flex; flex-direction: column; gap: 3px; }
+.fi label { font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 400; letter-spacing: 0.08em; text-transform: uppercase; color: #999; }
+.fi select, .fi input { background: #FAFAFA; border: 1px solid #E5E5E5; border-radius: 4px; color: #333; font-size: 12px; padding: 5px 9px; outline: none; font-family: 'Space Grotesk', sans-serif; }
+.fa { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.btn-apply { background: #111; color: white; border: none; border-radius: 6px; padding: 8px 18px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Space Grotesk', sans-serif; }
+.btn-exp { background: white; color: #555; border: 1px solid #E5E5E5; border-radius: 6px; padding: 8px 12px; font-size: 12px; cursor: pointer; font-family: 'Space Grotesk', sans-serif; }
+
+/* KPI band */
+.kpi-band { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #E5E5E5; border: 1px solid #E5E5E5; border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
+.kpi { background: white; padding: 24px 22px; position: relative; }
+.kpi-label { font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: #999; margin-bottom: 12px; }
+.kpi-val { font-family: 'Space Grotesk', sans-serif; font-size: 52px; font-weight: 700; letter-spacing: -0.05em; line-height: 1; color: #111; }
+.kpi-sub { font-size: 11px; color: #999; margin-top: 8px; font-weight: 400; }
+.kpi-accent { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.kpi.alert .kpi-val { color: #DC2626; }
+.kpi.alert .kpi-label { color: #DC2626; }
+
+/* Two-col grid */
+.two-col { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; margin-bottom: 16px; }
+.full-col { margin-bottom: 16px; }
+.even-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+
+/* Cards */
+.card { background: white; border: 1px solid #E5E5E5; border-radius: 8px; padding: 22px; }
+.card-title { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: #999; display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.card-dl { font-size: 10px; color: #BBBBB; border: 1px solid #E5E5E5; border-radius: 4px; padding: 2px 7px; cursor: pointer; background: #FAFAFA; }
+
+/* Horizontal bars */
+.hbar { display: flex; flex-direction: column; gap: 9px; }
+.hb { display: flex; align-items: center; gap: 10px; }
+.hb-label { font-size: 11px; color: #555; width: 150px; text-align: right; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hb-track { flex: 1; background: #F5F5F5; border-radius: 3px; height: 20px; overflow: hidden; }
+.hb-fill { height: 100%; border-radius: 3px; }
+.hb-num { font-family: 'Space Mono', monospace; font-size: 11px; color: #555; width: 22px; flex-shrink: 0; }
+
+/* Util table */
+.util-table { }
+.ut-hdr { display: grid; grid-template-columns: 1fr 120px 60px; gap: 8px; font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: #999; padding: 0 0 8px; border-bottom: 1px solid #F0F0F0; margin-bottom: 8px; }
+.ut-row { display: grid; grid-template-columns: 1fr 120px 60px; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid #F8F8F8; }
+.ut-row:last-child { border-bottom: none; }
+.ut-name { font-size: 12px; font-weight: 600; color: #111; }
+.ut-role { font-size: 10px; color: #999; margin-top: 1px; }
+.ut-bar-wrap { display: flex; align-items: center; gap: 6px; }
+.ut-bar { flex: 1; background: #F5F5F5; border-radius: 3px; height: 6px; overflow: hidden; }
+.ut-bar-fill { height: 100%; border-radius: 3px; }
+.ut-pct { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; text-align: right; }
+
+/* Dept blocks */
+.dept-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.dept-block { background: #F5F5F5; border-radius: 6px; padding: 14px 12px; text-align: center; }
+.dept-name { font-size: 9px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #777; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dept-pct { font-family: 'Space Mono', monospace; font-size: 24px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 6px; }
+.dept-bar-h { height: 4px; border-radius: 2px; }
+
+/* Avail grid */
+.avail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.avail-row { display: flex; align-items: center; gap: 8px; background: #F8FFF8; border: 1px solid #D1FAE5; border-radius: 6px; padding: 10px 12px; }
+.av-init { width: 30px; height: 30px; border-radius: 6px; background: #D1FAE5; color: #065F46; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+.av-name { font-size: 11px; font-weight: 600; color: #065F46; }
+.av-role { font-size: 9px; color: #6B7280; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.av-free { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; color: #059669; margin-left: auto; flex-shrink: 0; }
+
+/* Donut */
+.donut-row { display: flex; align-items: center; justify-content: space-around; }
+.dl-col { display: flex; flex-direction: column; gap: 8px; }
+.dl-row { display: flex; align-items: center; gap: 8px; }
+.dl-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.dl-label { font-size: 11px; color: #555; }
+.dl-val { font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; color: #111; margin-left: auto; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="brand">
+    <span class="brand-name">Resource Allocation</span>
+    <div class="brand-divider"></div>
+    <span class="brand-sub">Strategic Portfolio Management</span>
+    <span class="live-chip">● LIVE</span>
+  </div>
+  <nav class="nav">
+    <button class="nav-btn active">Dashboard</button>
+    <button class="nav-btn">Manage Allocations</button>
+    <button class="nav-btn">Bulk Allocations</button>
+  </nav>
+</header>
+
+<div class="main">
+  <!-- FILTER STRIP -->
+  <div class="filter-strip">
+    <div class="fi"><label>Team</label><select><option>All Teams</option></select></div>
+    <div class="fi"><label>Scope</label><select><option>All Orgs</option></select></div>
+    <div class="fi"><label>Start Date</label><input type="date" value="2025-01-01"/></div>
+    <div class="fi"><label>End Date</label><input type="date" value="2025-12-31"/></div>
+    <div class="fa"><button class="btn-exp">↓ Export PPT</button><button class="btn-apply">Apply</button></div>
+  </div>
+
+  <!-- KPI BAND -->
+  <div class="kpi-band">
+    <div class="kpi">
+      <div class="kpi-accent" style="background:#2563EB"></div>
+      <div class="kpi-label">Total People</div>
+      <div class="kpi-val">247</div>
+      <div class="kpi-sub">Active headcount</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-accent" style="background:#7C3AED"></div>
+      <div class="kpi-label">Active Projects</div>
+      <div class="kpi-val">18</div>
+      <div class="kpi-sub">In-flight initiatives</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-accent" style="background:#059669"></div>
+      <div class="kpi-label">Assignments</div>
+      <div class="kpi-val">341</div>
+      <div class="kpi-sub">Avg 1.4 per person</div>
+    </div>
+    <div class="kpi alert">
+      <div class="kpi-accent" style="background:#DC2626"></div>
+      <div class="kpi-label">Unassigned</div>
+      <div class="kpi-val">12</div>
+      <div class="kpi-sub">Needs allocation</div>
+    </div>
+  </div>
+
+  <!-- ROW: Big chart + donut -->
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">Team Size by Project <span class="card-dl">↓ PNG</span></div>
+      <div class="hbar">
+        <div class="hb"><span class="hb-label">Digital Transformation</span><div class="hb-track"><div class="hb-fill" style="width:85%;background:#2563EB"></div></div><span class="hb-num">42</span></div>
+        <div class="hb"><span class="hb-label">Cloud Migration</span><div class="hb-track"><div class="hb-fill" style="width:70%;background:#7C3AED"></div></div><span class="hb-num">35</span></div>
+        <div class="hb"><span class="hb-label">ERP Modernisation</span><div class="hb-track"><div class="hb-fill" style="width:58%;background:#0891B2"></div></div><span class="hb-num">29</span></div>
+        <div class="hb"><span class="hb-label">CRM Rollout</span><div class="hb-track"><div class="hb-fill" style="width:44%;background:#059669"></div></div><span class="hb-num">22</span></div>
+        <div class="hb"><span class="hb-label">Data Analytics</span><div class="hb-track"><div class="hb-fill" style="width:36%;background:#D97706"></div></div><span class="hb-num">18</span></div>
+        <div class="hb"><span class="hb-label">Security Upgrade</span><div class="hb-track"><div class="hb-fill" style="width:24%;background:#DC2626"></div></div><span class="hb-num">12</span></div>
+        <div class="hb"><span class="hb-label">Compliance</span><div class="hb-track"><div class="hb-fill" style="width:18%;background:#0F766E"></div></div><span class="hb-num">9</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Utilization Distribution <span class="card-dl">↓ PNG</span></div>
+      <div class="donut-row">
+        <svg width="150" height="150" viewBox="0 0 150 150">
+          <circle cx="75" cy="75" r="56" fill="none" stroke="#F3F4F6" stroke-width="26"/>
+          <circle cx="75" cy="75" r="56" fill="none" stroke="#2563EB" stroke-width="26" stroke-dasharray="211 140" stroke-dashoffset="0" transform="rotate(-90 75 75)"/>
+          <circle cx="75" cy="75" r="56" fill="none" stroke="#059669" stroke-width="26" stroke-dasharray="106 245" stroke-dashoffset="-211" transform="rotate(-90 75 75)"/>
+          <circle cx="75" cy="75" r="56" fill="none" stroke="#F59E0B" stroke-width="26" stroke-dasharray="49 302" stroke-dashoffset="-317" transform="rotate(-90 75 75)"/>
+          <circle cx="75" cy="75" r="56" fill="none" stroke="#DC2626" stroke-width="26" stroke-dasharray="24 327" stroke-dashoffset="-366" transform="rotate(-90 75 75)"/>
+          <text x="75" y="70" text-anchor="middle" font-family="Space Grotesk" font-size="22" font-weight="700" fill="#111">247</text>
+          <text x="75" y="85" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#999" letter-spacing="1">PEOPLE</text>
+        </svg>
+        <div class="dl-col">
+          <div class="dl-row"><span class="dl-dot" style="background:#2563EB"></span><span class="dl-label">76–100%</span><span class="dl-val">92</span></div>
+          <div class="dl-row"><span class="dl-dot" style="background:#059669"></span><span class="dl-label">50–75%</span><span class="dl-val">46</span></div>
+          <div class="dl-row"><span class="dl-dot" style="background:#F59E0B"></span><span class="dl-label">Under 50%</span><span class="dl-val">23</span></div>
+          <div class="dl-row"><span class="dl-dot" style="background:#DC2626"></span><span class="dl-label">Over-alloc</span><span class="dl-val">11</span></div>
+          <div class="dl-row"><span class="dl-dot" style="background:#E5E5E5"></span><span class="dl-label">Unallocated</span><span class="dl-val">12</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEPT BLOCKS -->
+  <div class="card full-col" style="margin-bottom:16px">
+    <div class="card-title">Avg. Utilization by Department <span class="card-dl">↓ PNG</span></div>
+    <div class="dept-grid">
+      <div class="dept-block"><div class="dept-name">Engineering</div><div class="dept-pct" style="color:#2563EB">87%</div><div class="dept-bar-h" style="background:#2563EB;width:87%"></div></div>
+      <div class="dept-block"><div class="dept-name">Architecture</div><div class="dept-pct" style="color:#7C3AED">74%</div><div class="dept-bar-h" style="background:#7C3AED;width:74%"></div></div>
+      <div class="dept-block"><div class="dept-name">PMO</div><div class="dept-pct" style="color:#0891B2">68%</div><div class="dept-bar-h" style="background:#0891B2;width:68%"></div></div>
+      <div class="dept-block"><div class="dept-name">Security</div><div class="dept-pct" style="color:#059669">55%</div><div class="dept-bar-h" style="background:#059669;width:55%"></div></div>
+      <div class="dept-block"><div class="dept-name">Data & Analytics</div><div class="dept-pct" style="color:#D97706">48%</div><div class="dept-bar-h" style="background:#D97706;width:48%"></div></div>
+    </div>
+  </div>
+
+  <!-- PEOPLE TABLES -->
+  <div class="even-col">
+    <!-- High util -->
+    <div class="card">
+      <div class="card-title">Highest Utilization <span style="color:#DC2626;background:#FEF2F2;padding:2px 8px;border-radius:4px;font-size:9px">6 ALERTS</span></div>
+      <div class="util-table">
+        <div class="ut-hdr"><span>Person</span><span>Utilization</span><span style="text-align:right">%</span></div>
+        <div class="ut-row"><div><div class="ut-name">James Davidson</div><div class="ut-role">Senior Engineer · 4 projects</div></div><div class="ut-bar-wrap"><div class="ut-bar"><div class="ut-bar-fill" style="width:100%;background:#DC2626"></div></div></div><span class="ut-pct" style="color:#DC2626">124%</span></div>
+        <div class="ut-row"><div><div class="ut-name">Sarah Mitchell</div><div class="ut-role">Solution Architect · 3 projects</div></div><div class="ut-bar-wrap"><div class="ut-bar"><div class="ut-bar-fill" style="width:95%;background:#DC2626"></div></div></div><span class="ut-pct" style="color:#DC2626">117%</span></div>
+        <div class="ut-row"><div><div class="ut-name">Arjun Kumar</div><div class="ut-role">Project Manager · 3 projects</div></div><div class="ut-bar-wrap"><div class="ut-bar"><div class="ut-bar-fill" style="width:88%;background:#EA580C"></div></div></div><span class="ut-pct" style="color:#EA580C">108%</span></div>
+        <div class="ut-row"><div><div class="ut-name">Laura Chen</div><div class="ut-role">Business Analyst · 3 projects</div></div><div class="ut-bar-wrap"><div class="ut-bar"><div class="ut-bar-fill" style="width:80%;background:#D97706"></div></div></div><span class="ut-pct" style="color:#D97706">95%</span></div>
+        <div class="ut-row"><div><div class="ut-name">Tom Williams</div><div class="ut-role">Senior Engineer · 2 projects</div></div><div class="ut-bar-wrap"><div class="ut-bar"><div class="ut-bar-fill" style="width:75%;background:#D97706"></div></div></div><span class="ut-pct" style="color:#D97706">91%</span></div>
+      </div>
+    </div>
+
+    <!-- Available -->
+    <div class="card">
+      <div class="card-title">Available Capacity <span style="color:#059669;background:#F0FDF4;padding:2px 8px;border-radius:4px;font-size:9px">35 OPEN</span></div>
+      <div class="avail-grid">
+        <div class="avail-row"><div class="av-init">PR</div><div style="flex:1;min-width:0"><div class="av-name">Priya Rajan</div><div class="av-role">QA Engineer · Engineering</div></div><span class="av-free">100%</span></div>
+        <div class="avail-row"><div class="av-init">MO</div><div style="flex:1;min-width:0"><div class="av-name">Marcus O'Brien</div><div class="av-role">Business Analyst</div></div><span class="av-free">100%</span></div>
+        <div class="avail-row"><div class="av-init">FT</div><div style="flex:1;min-width:0"><div class="av-name">Fatima Tran</div><div class="av-role">Sr Engineer · Security</div></div><span class="av-free">75%</span></div>
+        <div class="avail-row"><div class="av-init">RG</div><div style="flex:1;min-width:0"><div class="av-name">Roberto Garcia</div><div class="av-role">Project Manager</div></div><span class="av-free">60%</span></div>
+        <div class="avail-row"><div class="av-init">EL</div><div style="flex:1;min-width:0"><div class="av-name">Emma Larsson</div><div class="av-role">Data Analyst</div></div><span class="av-free">50%</span></div>
+        <div class="avail-row"><div class="av-init">KP</div><div style="flex:1;min-width:0"><div class="av-name">Kai Patel</div><div class="av-role">Solution Architect</div></div><span class="av-free">50%</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

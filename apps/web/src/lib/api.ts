@@ -65,4 +65,28 @@ export const api = {
     preview: (data: any) => request<any>('/publish/preview', { method: 'POST', body: JSON.stringify(data) }),
     execute: (data: any) => request<any>('/publish', { method: 'POST', body: JSON.stringify(data) }),
   },
+  config: {
+    get: () => request<{
+      configured: boolean;
+      connected: boolean;
+      instance: string | null;
+      userEmail: string | null;
+      hasUserToken: boolean;
+      hasCookie: boolean;
+    }>('/config/servicenow'),
+    update: (data: {
+      instance?: string;
+      userEmail?: string;
+      userToken?: string;
+      cookie?: string;
+    }) => request<{
+      configured: boolean;
+      connected: boolean;
+      instance: string | null;
+      userEmail: string | null;
+      hasUserToken: boolean;
+      hasCookie: boolean;
+      message: string;
+    }>('/config/servicenow', { method: 'POST', body: JSON.stringify(data) }),
+  },
 };

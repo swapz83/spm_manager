@@ -6,12 +6,16 @@ CREATE TABLE IF NOT EXISTS sys_user (
     email           TEXT NOT NULL DEFAULT '',
     title           TEXT,
     department      TEXT,
+    department_name TEXT,
     manager         TEXT,
     avatar_url      TEXT,
     active          BOOLEAN DEFAULT true,
     sys_created_on  TIMESTAMP DEFAULT now(),
     sys_updated_on  TIMESTAMP DEFAULT now()
 );
+
+-- Migration: add department_name if upgrading from an older schema
+ALTER TABLE sys_user ADD COLUMN IF NOT EXISTS department_name TEXT;
 
 CREATE TABLE IF NOT EXISTS pm_project (
     sys_id          TEXT PRIMARY KEY,

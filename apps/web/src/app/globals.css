@@ -3,37 +3,52 @@
 @tailwind utilities;
 
 :root {
-  --bg-primary: #f8fafc;
-  --bg-card: #ffffff;
-  --border: #e2e8f0;
-  --text-primary: #0f172a;
-  --text-secondary: #64748b;
+  --blue-primary: #1A56DB;
+  --surface: #F4F6FB;
+  --card: #FFFFFF;
+  --border: #E5E7EB;
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+  --shadow-card: 0 1px 3px rgba(17, 24, 39, 0.06), 0 2px 8px rgba(17, 24, 39, 0.04);
+  --shadow-card-hover: 0 4px 16px rgba(17, 24, 39, 0.10), 0 2px 6px rgba(17, 24, 39, 0.05);
 }
 
 body {
-  background: var(--bg-primary);
+  background: var(--surface);
   color: var(--text-primary);
-  font-family: Helvetica, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'DM Sans', Helvetica, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Bold text across the app uses Arial Black rather than a heavier weight. */
-.font-bold,
-b,
-strong {
-  font-family: 'Arial Black', Arial, sans-serif;
-  font-weight: 900;
+/* Ensure all form controls and buttons inherit the custom font */
+button,
+input,
+select,
+textarea,
+optgroup {
+  font-family: inherit;
 }
 
-/* All cards use a 5px corner radius (overrides Tailwind's rounded-2xl). */
+/* Unified card component */
+.ec-card {
+  background: var(--card);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+}
+
+/* Refined border radius override — replaces old 5 px value */
 .rounded-2xl {
-  border-radius: 5px;
+  border-radius: 12px;
 }
 
+/* Scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-color: #D1D5DB transparent;
 }
 
+/* Drag-and-drop states */
 .drag-overlay {
   opacity: 0.9;
   cursor: grabbing;
@@ -41,6 +56,6 @@ strong {
 
 .drop-target-active {
   ring: 2px;
-  ring-color: #3b82f6;
-  background: #eff6ff;
+  ring-color: #1A56DB;
+  background: #EFF6FF;
 }

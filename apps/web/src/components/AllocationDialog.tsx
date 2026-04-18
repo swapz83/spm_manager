@@ -142,27 +142,27 @@ export function AllocationDialog({ people, project, defaultStartDate, defaultEnd
           {/* ── Date pickers ── */}
           <div className="grid grid-cols-2 gap-3 mb-5">
             <div>
-              <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1.5">
-                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              <label className="flex items-center gap-1.5 text-[10px] font-bold tracking-[0.08em] uppercase text-gray-400 mb-1.5">
+                <Calendar className="w-3 h-3" />
                 Start Date
               </label>
               <input
                 type="date"
                 value={startDate}
                 onChange={e => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-700"
               />
             </div>
             <div>
-              <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1.5">
-                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              <label className="flex items-center gap-1.5 text-[10px] font-bold tracking-[0.08em] uppercase text-gray-400 mb-1.5">
+                <Calendar className="w-3 h-3" />
                 End Date
               </label>
               <input
                 type="date"
                 value={endDate}
                 onChange={e => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-700"
               />
             </div>
           </div>
@@ -212,10 +212,10 @@ export function AllocationDialog({ people, project, defaultStartDate, defaultEnd
         </div>
 
         {/* ── Footer ── */}
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex gap-3">
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex gap-3">
           <button
             onClick={onCancel}
-            className="flex-1 px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-white transition-colors"
+            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-white transition-colors"
           >
             Cancel
           </button>
@@ -223,8 +223,8 @@ export function AllocationDialog({ people, project, defaultStartDate, defaultEnd
             onClick={() => onConfirm(allocation, startDate, endDate, clearConflicts)}
             disabled={allocation <= 0 || !startDate || !endDate}
             className={cn(
-              'flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-colors',
-              allocation > 0 ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-300 cursor-not-allowed'
+              'flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors',
+              allocation > 0 ? 'bg-[#1A56DB] hover:bg-blue-700' : 'bg-gray-300 cursor-not-allowed'
             )}
           >
             Assign {people.length > 1 ? `${people.length} people` : ''}

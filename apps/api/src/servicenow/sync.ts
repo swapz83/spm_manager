@@ -40,10 +40,11 @@ interface SnUser {
   last_name: string;
   email: string;
   title: string;
-  department: SnRef;        // reference → cmn_department
-  manager: SnRef;           // reference → sys_user
-  photo: string;            // relative URL or empty
-  active: string;           // "true" / "false"
+  department: SnRef;          // reference → cmn_department (sys_id)
+  'department.name'?: string; // dot-walked display name
+  manager: SnRef;             // reference → sys_user
+  photo: string;              // relative URL or empty
+  active: string;             // "true" / "false"
 }
 
 interface SnProject {
@@ -110,7 +111,7 @@ async function dbExec(db: PGlite, sql: string, params: any[] = [], label?: strin
 
 // ── Main sync function ─────────────────────────────────────────────────
 
-export async function syncFromServiceNow(db: PGlite, sn: ServiceNowClient, userEmail: string): Promise<void> {
+export async function syncFromServiceNow(db: PGlite, sn: ServiceNowClient, userEmail: string, snInstance?: string): Promise<void> {
   querySeq = 0; // reset sequence for each sync run
 
   // ---- 1. Find myself ------------------------------------------------
@@ -119,7 +120,7 @@ export async function syncFromServiceNow(db: PGlite, sn: ServiceNowClient, userE
   const me = await sn.queryOne<SnUser>({
     table: 'sys_user',
     query: `email=${userEmail}`,
-    fields: ['sys_id', 'user_name', 'first_name', 'last_name', 'email', 'title', 'department', 'manager', 'photo', 'active'],
+    fields: ['sys_id', 'user_name', 'first_name', 'last_name', 'email', 'title', 'department', 'department.name', 'manager', 'photo', 'active'],
   });
 
   if (!me) {
@@ -145,7 +146,7 @@ export async function syncFromServiceNow(db: PGlite, sn: ServiceNowClient, userE
         table: 'sys_user',
         query: `managerIN${batch.join(',')}^active=true`,
         fields: ['sys_id', 'user_name', 'first_name', 'last_name', 'email',
-                 'title', 'department', 'manager', 'photo', 'active'],
+                 'title', 'department', 'department.name', 'manager', 'photo', 'active'],
         limit: 1000,
       });
       for (const u of rows) {
@@ -234,16 +235,18 @@ export async function syncFromServiceNow(db: PGlite, sn: ServiceNowClient, userE
 
   // -- Users --
   for (const u of allUsers) {
+    const baseInstance = snInstance || process.env.SN_INSTANCE || '';
     const avatarUrl = u.photo
-      ? `${process.env.SN_INSTANCE}/${u.photo}`.replace(/([^:])\/\//g, '$1/')
+      ? `${baseInstance}/${u.photo}`.replace(/([^:])\/\//g, '$1/')
       : `https://ui-avatars.com/api/?name=${encodeURIComponent(u.first_name + ' ' + u.last_name)}&background=random&size=128`;
 
     await dbExec(db,
-      `INSERT INTO sys_user (sys_id, user_name, first_name, last_name, email, title, department, manager, avatar_url, active)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+      `INSERT INTO sys_user (sys_id, user_name, first_name, last_name, email, title, department, department_name, manager, avatar_url, active)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        ON CONFLICT (sys_id) DO UPDATE SET
          user_name=EXCLUDED.user_name, first_name=EXCLUDED.first_name, last_name=EXCLUDED.last_name,
          email=EXCLUDED.email, title=EXCLUDED.title, department=EXCLUDED.department,
+         department_name=EXCLUDED.department_name,
          manager=EXCLUDED.manager, avatar_url=EXCLUDED.avatar_url, active=EXCLUDED.active,
          sys_updated_on=now()`,
       [
@@ -254,6 +257,7 @@ export async function syncFromServiceNow(db: PGlite, sn: ServiceNowClient, userE
         u.email || '',
         u.title || null,
         ref(u.department) || null,
+        u['department.name'] || null,
         ref(u.manager) || null,
         avatarUrl,
         u.active !== 'false',

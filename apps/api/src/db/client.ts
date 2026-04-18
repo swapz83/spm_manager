@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join, resolve } from 'path';
 import { seed } from './seed.js';
 import { ServiceNowClient } from '../servicenow/client.js';
-import { getSnConfigFromEnv } from '../servicenow/config.js';
+import { getRuntimeConfig, isFullyConfigured } from '../servicenow/runtimeConfig.js';
 import { syncFromServiceNow } from '../servicenow/sync.js';
 import type { FastifyInstance } from 'fastify';
 
@@ -26,11 +26,16 @@ export async function getDb(): Promise<PGlite> {
     await db.exec(schema);
 
     // Try ServiceNow live sync first; fall back to mock seed
-    const snConfig = getSnConfigFromEnv();
-    const userEmail = process.env.SN_USER_EMAIL;
+    // runtimeConfig is initialised from env vars at module load time
+    const cfg = getRuntimeConfig();
+    const userEmail = cfg.userEmail;
 
-    if (snConfig && userEmail) {
-      const sn = new ServiceNowClient(snConfig);
+    if (isFullyConfigured() && userEmail) {
+      const sn = new ServiceNowClient({
+        instance: cfg.instance,
+        token:    cfg.userToken,
+        cookie:   cfg.cookie,
+      });
 
       console.log('[DB] ServiceNow credentials detected — testing connection...');
       const ok = await sn.testConnection();
@@ -46,7 +51,7 @@ export async function getDb(): Promise<PGlite> {
             TRUNCATE sys_user;
           `);
           console.log('[DB] Tables cleared — syncing live data...');
-          await syncFromServiceNow(db, sn, userEmail);
+          await syncFromServiceNow(db, sn, userEmail, cfg.instance);
           console.log('[DB] Live data loaded from ServiceNow');
           snConnected = true;
           snClient = sn;

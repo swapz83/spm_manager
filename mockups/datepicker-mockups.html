@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Date Picker Mockups — Resource Allocation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #1A56DB;
+      --blue-light: #EFF6FF;
+      --blue-mid: #BFDBFE;
+      --surface: #F4F6FB;
+      --card: #FFFFFF;
+      --border: #E5E7EB;
+      --text: #111827;
+      --muted: #6B7280;
+      --shadow: 0 1px 3px rgba(17,24,39,0.06), 0 2px 8px rgba(17,24,39,0.04);
+      --shadow-lg: 0 4px 24px rgba(17,24,39,0.12), 0 2px 8px rgba(17,24,39,0.06);
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: var(--surface);
+      color: var(--text);
+      padding: 40px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page-header {
+      max-width: 1200px;
+      margin: 0 auto 48px;
+    }
+    .page-header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .page-header p {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .options-grid {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 32px;
+    }
+
+    .option-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .option-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    /* ═══════════════════════════════
+       OPTION A: Inline dual-month calendar
+       ═══════════════════════════════ */
+    .opt-a .trigger-area {
+      padding: 16px;
+      border-bottom: 1px solid #F3F4F6;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .opt-a .trigger-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .opt-a .date-range-display {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+    .opt-a .date-pill {
+      flex: 1;
+      background: #F9FAFB;
+      border: 1.5px solid #E5E7EB;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .opt-a .date-pill.active {
+      border-color: var(--blue);
+      background: var(--blue-light);
+      color: var(--blue);
+    }
+    .opt-a .date-pill svg { opacity: 0.5; }
+    .opt-a .arrow { color: var(--muted); font-size: 12px; }
+
+    .calendar-container {
+      display: flex;
+      gap: 1px;
+      background: #F3F4F6;
+    }
+    .calendar-month {
+      flex: 1;
+      background: white;
+      padding: 16px;
+    }
+    .cal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .cal-nav {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 1px solid #E5E7EB;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .cal-nav:hover { background: #F9FAFB; }
+    .cal-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+    }
+    .cal-dow {
+      text-align: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: #9CA3AF;
+      letter-spacing: 0.04em;
+      padding: 4px 0;
+    }
+    .cal-day {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      border-radius: 6px;
+      cursor: pointer;
+      position: relative;
+    }
+    .cal-day:hover { background: #F3F4F6; }
+    .cal-day.today { font-weight: 700; color: var(--blue); }
+    .cal-day.start, .cal-day.end {
+      background: var(--blue);
+      color: white;
+      font-weight: 700;
+      border-radius: 6px;
+    }
+    .cal-day.in-range {
+      background: var(--blue-light);
+      color: var(--blue);
+      border-radius: 0;
+    }
+    .cal-day.start { border-radius: 6px 0 0 6px; }
+    .cal-day.end { border-radius: 0 6px 6px 0; }
+    .cal-day.start.end { border-radius: 6px; }
+    .cal-day.other-month { color: #D1D5DB; }
+    .cal-day.disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .cal-footer {
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid #F3F4F6;
+    }
+    .cal-range-summary {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .cal-range-summary strong { color: var(--text); }
+    .btn-apply {
+      padding: 7px 18px;
+      background: var(--blue);
+      color: white;
+      border: none;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-apply:hover { background: #1447B2; }
+    .btn-clear {
+      padding: 7px 12px;
+      background: white;
+      color: var(--muted);
+      border: 1px solid #E5E7EB;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* ═══════════════════════════════
+       OPTION B: Compact inline range strip
+       ═══════════════════════════════ */
+    .opt-b .range-strip {
+      display: flex;
+      align-items: stretch;
+      padding: 14px 16px;
+      gap: 0;
+      border-bottom: 1px solid #F3F4F6;
+    }
+    .opt-b .range-field {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .opt-b .range-field label {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #9CA3AF;
+    }
+    .opt-b .range-field input {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      border: none;
+      background: transparent;
+      outline: none;
+      width: 100%;
+    }
+    .opt-b .range-divider {
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      color: #D1D5DB;
+      font-size: 16px;
+    }
+    .opt-b .quick-chips {
+      display: flex;
+      gap: 6px;
+      padding: 10px 16px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid #F3F4F6;
+      background: #FAFAFA;
+    }
+    .chip {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1.5px solid #E5E7EB;
+      color: var(--muted);
+      cursor: pointer;
+      background: white;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .chip:hover { border-color: var(--blue); color: var(--blue); }
+    .chip.active {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: white;
+    }
+    .opt-b .cal-compact {
+      padding: 12px 16px;
+    }
+
+    /* Mini calendar for option B */
+    .mini-cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 1px;
+    }
+    .mini-cal-day {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .mini-cal-day:hover { background: #F3F4F6; }
+    .mini-cal-day.start, .mini-cal-day.end {
+      background: var(--blue); color: white; font-weight: 700;
+    }
+    .mini-cal-day.in-range {
+      background: var(--blue-light); color: var(--blue); border-radius: 0;
+    }
+    .mini-cal-day.start { border-radius: 4px 0 0 4px; }
+    .mini-cal-day.end { border-radius: 0 4px 4px 0; }
+    .mini-cal-day.other-month { color: #D1D5DB; }
+    .mini-cal-dow {
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: 700;
+      color: #9CA3AF;
+      letter-spacing: 0.04em;
+    }
+    .opt-b-actions {
+      padding: 10px 16px;
+      display: flex;
+      gap: 8px;
+      border-top: 1px solid #F3F4F6;
+    }
+
+    /* ═══════════════════════════════
+       OPTION C: Quarter / preset picker
+       ═══════════════════════════════ */
+    .opt-c .preset-tabs {
+      display: flex;
+      border-bottom: 1px solid #F3F4F6;
+    }
+    .preset-tab {
+      flex: 1;
+      padding: 11px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-align: center;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      font-family: inherit;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+    }
+    .preset-tab.active {
+      color: var(--blue);
+      border-bottom-color: var(--blue);
+    }
+    .preset-tab:hover:not(.active) { color: var(--text); }
+
+    .preset-grid {
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .preset-btn {
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1.5px solid #E5E7EB;
+      background: white;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s;
+    }
+    .preset-btn:hover { border-color: var(--blue); background: var(--blue-light); }
+    .preset-btn.active { border-color: var(--blue); background: var(--blue-light); }
+    .preset-btn-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    .preset-btn.active .preset-btn-label { color: var(--blue); }
+    .preset-btn-range {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .opt-c .divider-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 12px;
+    }
+    .divider-line { flex: 1; height: 1px; background: #F3F4F6; }
+    .divider-text { font-size: 10px; font-weight: 700; color: #D1D5DB; letter-spacing: 0.08em; text-transform: uppercase; }
+
+    .opt-c .custom-dates {
+      padding: 10px 12px 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .custom-date-field label {
+      display: block;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #9CA3AF;
+      margin-bottom: 4px;
+    }
+    .custom-date-field input {
+      width: 100%;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 8px 10px;
+      border: 1.5px solid #E5E7EB;
+      border-radius: 7px;
+      background: #F9FAFB;
+      color: var(--text);
+      outline: none;
+    }
+    .custom-date-field input:focus { border-color: var(--blue); background: var(--blue-light); }
+
+    .opt-c .selected-summary {
+      margin: 0 12px 12px;
+      padding: 10px 12px;
+      background: var(--blue-light);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .selected-summary-text {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--blue);
+    }
+    .selected-summary-duration {
+      font-size: 11px;
+      color: #3B82F6;
+      opacity: 0.8;
+    }
+
+    .opt-c-footer {
+      padding: 10px 12px;
+      display: flex;
+      gap: 8px;
+      border-top: 1px solid #F3F4F6;
+    }
+
+    /* Context label and explanation */
+    .option-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .option-desc {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      background: #EFF6FF;
+      color: var(--blue);
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 20px;
+      letter-spacing: 0.04em;
+    }
+
+    svg { display: inline-block; vertical-align: middle; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Date Picker Mockups</h1>
+  <p>Three design directions for the date range selector — resource allocation, filters, and allocation dialogs.</p>
+</div>
+
+<div class="options-grid">
+
+  <!-- ═══ OPTION A: Dual-month inline calendar ═══ -->
+  <div class="option-wrapper">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span class="option-title">Option A</span>
+        <span class="badge">Recommended</span>
+      </div>
+      <p class="option-desc">Full dual-month calendar with range selection. Best for filter bar date ranges — shows context and makes range selection intuitive.</p>
+    </div>
+
+    <div class="card opt-a">
+      <!-- Trigger row -->
+      <div class="trigger-area">
+        <div class="date-range-display">
+          <div style="flex:1">
+            <div class="trigger-label">Date Range</div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div class="date-pill active">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Jan 1, 2025
+              </div>
+              <span class="arrow">→</span>
+              <div class="date-pill">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Dec 31, 2025
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dual month -->
+      <div class="calendar-container">
+        <!-- Month 1 -->
+        <div class="calendar-month">
+          <div class="cal-header">
+            <button class="cal-nav">‹</button>
+            <span class="cal-title">January 2025</span>
+            <button class="cal-nav" style="visibility:hidden">›</button>
+          </div>
+          <div class="cal-grid">
+            <div class="cal-dow">S</div><div class="cal-dow">M</div><div class="cal-dow">T</div><div class="cal-dow">W</div><div class="cal-dow">T</div><div class="cal-dow">F</div><div class="cal-dow">S</div>
+            <!-- Week 1 -->
+            <div class="cal-day other-month">29</div><div class="cal-day other-month">30</div><div class="cal-day other-month">31</div><div class="cal-day start">1</div><div class="cal-day in-range">2</div><div class="cal-day in-range">3</div><div class="cal-day in-range">4</div>
+            <!-- Week 2 -->
+            <div class="cal-day in-range">5</div><div class="cal-day in-range">6</div><div class="cal-day in-range">7</div><div class="cal-day in-range">8</div><div class="cal-day in-range">9</div><div class="cal-day in-range">10</div><div class="cal-day in-range">11</div>
+            <!-- Week 3 -->
+            <div class="cal-day in-range">12</div><div class="cal-day in-range">13</div><div class="cal-day in-range">14</div><div class="cal-day in-range">15</div><div class="cal-day in-range">16</div><div class="cal-day in-range">17</div><div class="cal-day in-range">18</div>
+            <!-- Week 4 -->
+            <div class="cal-day in-range">19</div><div class="cal-day in-range">20</div><div class="cal-day in-range">21</div><div class="cal-day in-range">22</div><div class="cal-day in-range">23</div><div class="cal-day in-range">24</div><div class="cal-day in-range">25</div>
+            <!-- Week 5 -->
+            <div class="cal-day in-range">26</div><div class="cal-day in-range">27</div><div class="cal-day in-range">28</div><div class="cal-day in-range">29</div><div class="cal-day in-range">30</div><div class="cal-day in-range">31</div><div class="cal-day other-month">1</div>
+          </div>
+        </div>
+        <!-- Month 2 -->
+        <div class="calendar-month">
+          <div class="cal-header">
+            <button class="cal-nav" style="visibility:hidden">‹</button>
+            <span class="cal-title">February 2025</span>
+            <button class="cal-nav">›</button>
+          </div>
+          <div class="cal-grid">
+            <div class="cal-dow">S</div><div class="cal-dow">M</div><div class="cal-dow">T</div><div class="cal-dow">W</div><div class="cal-dow">T</div><div class="cal-dow">F</div><div class="cal-dow">S</div>
+            <div class="cal-day other-month">26</div><div class="cal-day other-month">27</div><div class="cal-day other-month">28</div><div class="cal-day other-month">29</div><div class="cal-day other-month">30</div><div class="cal-day other-month">31</div><div class="cal-day in-range">1</div>
+            <div class="cal-day in-range">2</div><div class="cal-day in-range">3</div><div class="cal-day in-range">4</div><div class="cal-day in-range">5</div><div class="cal-day in-range">6</div><div class="cal-day in-range">7</div><div class="cal-day in-range">8</div>
+            <div class="cal-day in-range">9</div><div class="cal-day in-range">10</div><div class="cal-day in-range">11</div><div class="cal-day in-range">12</div><div class="cal-day in-range">13</div><div class="cal-day in-range">14</div><div class="cal-day in-range">15</div>
+            <div class="cal-day in-range">16</div><div class="cal-day in-range">17</div><div class="cal-day in-range">18</div><div class="cal-day in-range">19</div><div class="cal-day in-range">20</div><div class="cal-day in-range">21</div><div class="cal-day in-range">22</div>
+            <div class="cal-day in-range">23</div><div class="cal-day in-range">24</div><div class="cal-day in-range">25</div><div class="cal-day in-range">26</div><div class="cal-day in-range">27</div><div class="cal-day in-range">28</div><div class="cal-day other-month">1</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="cal-footer">
+        <div class="cal-range-summary">
+          <strong>Jan 1</strong> → <strong>Dec 31, 2025</strong>
+          <span style="margin-left:8px;color:#9CA3AF;">365 days</span>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-clear">Clear</button>
+          <button class="btn-apply">Apply Range</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ OPTION B: Quick chips + compact calendar ═══ -->
+  <div class="option-wrapper">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span class="option-title">Option B</span>
+        <span class="badge" style="background:#FEF3C7;color:#92400E;">Quick Select</span>
+      </div>
+      <p class="option-desc">Preset quick-select chips (this quarter, FY2025, etc.) plus a compact single-month fallback. Fast for common ranges.</p>
+    </div>
+
+    <div class="card opt-b">
+      <!-- Input strip -->
+      <div class="range-strip">
+        <div class="range-field">
+          <label>From</label>
+          <input type="text" value="Jan 1, 2025" readonly />
+        </div>
+        <div class="range-divider">→</div>
+        <div class="range-field">
+          <label>To</label>
+          <input type="text" value="Mar 31, 2025" readonly />
+        </div>
+      </div>
+
+      <!-- Quick chips -->
+      <div class="quick-chips">
+        <button class="chip">This week</button>
+        <button class="chip">This month</button>
+        <button class="chip active">Q1 2025</button>
+        <button class="chip">Q2 2025</button>
+        <button class="chip">H1 2025</button>
+        <button class="chip">FY 2025</button>
+        <button class="chip">Custom…</button>
+      </div>
+
+      <!-- Compact single calendar -->
+      <div class="cal-compact">
+        <div class="cal-header" style="margin-bottom:8px;">
+          <button class="cal-nav">‹</button>
+          <span class="cal-title">March 2025</span>
+          <button class="cal-nav">›</button>
+        </div>
+        <div class="mini-cal-grid">
+          <div class="mini-cal-dow">S</div><div class="mini-cal-dow">M</div><div class="mini-cal-dow">T</div><div class="mini-cal-dow">W</div><div class="mini-cal-dow">T</div><div class="mini-cal-dow">F</div><div class="mini-cal-dow">S</div>
+          <div class="mini-cal-day other-month">23</div><div class="mini-cal-day other-month">24</div><div class="mini-cal-day other-month">25</div><div class="mini-cal-day other-month">26</div><div class="mini-cal-day other-month">27</div><div class="mini-cal-day other-month">28</div><div class="mini-cal-day in-range">1</div>
+          <div class="mini-cal-day in-range">2</div><div class="mini-cal-day in-range">3</div><div class="mini-cal-day in-range">4</div><div class="mini-cal-day in-range">5</div><div class="mini-cal-day in-range">6</div><div class="mini-cal-day in-range">7</div><div class="mini-cal-day in-range">8</div>
+          <div class="mini-cal-day in-range">9</div><div class="mini-cal-day in-range">10</div><div class="mini-cal-day in-range">11</div><div class="mini-cal-day in-range">12</div><div class="mini-cal-day in-range">13</div><div class="mini-cal-day in-range">14</div><div class="mini-cal-day in-range">15</div>
+          <div class="mini-cal-day in-range">16</div><div class="mini-cal-day in-range">17</div><div class="mini-cal-day in-range">18</div><div class="mini-cal-day in-range">19</div><div class="mini-cal-day in-range">20</div><div class="mini-cal-day in-range">21</div><div class="mini-cal-day in-range">22</div>
+          <div class="mini-cal-day in-range">23</div><div class="mini-cal-day in-range">24</div><div class="mini-cal-day in-range">25</div><div class="mini-cal-day in-range">26</div><div class="mini-cal-day in-range">27</div><div class="mini-cal-day in-range">28</div><div class="mini-cal-day in-range">29</div>
+          <div class="mini-cal-day in-range">30</div><div class="mini-cal-day end">31</div><div class="mini-cal-day other-month">1</div><div class="mini-cal-day other-month">2</div><div class="mini-cal-day other-month">3</div><div class="mini-cal-day other-month">4</div><div class="mini-cal-day other-month">5</div>
+        </div>
+      </div>
+
+      <div class="opt-b-actions">
+        <button class="btn-clear" style="flex:1;">Cancel</button>
+        <button class="btn-apply" style="flex:2;">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ OPTION C: Preset tiles + custom fields ═══ -->
+  <div class="option-wrapper">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span class="option-title">Option C</span>
+        <span class="badge" style="background:#F0FDF4;color:#166534;">Preset-First</span>
+      </div>
+      <p class="option-desc">Named presets shown as tappable tiles — ideal for fiscal planning cycles. Custom range falls back to text inputs. No calendar grid.</p>
+    </div>
+
+    <div class="card opt-c">
+      <!-- Tabs -->
+      <div class="preset-tabs">
+        <button class="preset-tab">Week</button>
+        <button class="preset-tab active">Quarter</button>
+        <button class="preset-tab">Half</button>
+        <button class="preset-tab">Year</button>
+        <button class="preset-tab">Custom</button>
+      </div>
+
+      <!-- Quarter grid -->
+      <div class="preset-grid">
+        <button class="preset-btn">
+          <div class="preset-btn-label">Q1 2025</div>
+          <div class="preset-btn-range">Jan 1 – Mar 31</div>
+        </button>
+        <button class="preset-btn active">
+          <div class="preset-btn-label">Q2 2025</div>
+          <div class="preset-btn-range">Apr 1 – Jun 30</div>
+        </button>
+        <button class="preset-btn">
+          <div class="preset-btn-label">Q3 2025</div>
+          <div class="preset-btn-range">Jul 1 – Sep 30</div>
+        </button>
+        <button class="preset-btn">
+          <div class="preset-btn-label">Q4 2025</div>
+          <div class="preset-btn-range">Oct 1 – Dec 31</div>
+        </button>
+        <button class="preset-btn">
+          <div class="preset-btn-label">Q1 2026</div>
+          <div class="preset-btn-range">Jan 1 – Mar 31</div>
+        </button>
+        <button class="preset-btn">
+          <div class="preset-btn-label">Q2 2026</div>
+          <div class="preset-btn-range">Apr 1 – Jun 30</div>
+        </button>
+      </div>
+
+      <!-- Divider -->
+      <div class="divider-row">
+        <div class="divider-line"></div>
+        <span class="divider-text">or custom</span>
+        <div class="divider-line"></div>
+      </div>
+
+      <!-- Custom date inputs -->
+      <div class="custom-dates">
+        <div class="custom-date-field">
+          <label>Start date</label>
+          <input type="date" value="2025-04-01" />
+        </div>
+        <div class="custom-date-field">
+          <label>End date</label>
+          <input type="date" value="2025-06-30" />
+        </div>
+      </div>
+
+      <!-- Selected summary -->
+      <div class="selected-summary">
+        <span class="selected-summary-text">Apr 1 → Jun 30, 2025</span>
+        <span class="selected-summary-duration">Q2 · 91 days</span>
+      </div>
+
+      <!-- Footer -->
+      <div class="opt-c-footer">
+        <button class="btn-clear" style="flex:1;">Cancel</button>
+        <button class="btn-apply" style="flex:2;">Apply Range</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /options-grid -->
+
+<!-- Usage note -->
+<div style="max-width:1200px;margin:40px auto 0;padding:16px 20px;background:white;border-radius:10px;box-shadow:var(--shadow);display:flex;gap:16px;align-items:flex-start;">
+  <div style="font-size:20px;margin-top:1px;">💡</div>
+  <div>
+    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">Implementation Recommendation</div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.6;">
+      <strong>Filter bar</strong> (ManageView, BulkAllocations): Use <strong>Option A</strong> (dual-month) in a dropdown popover triggered by clicking the date fields.
+      Pairs with the existing filter card layout naturally. &nbsp;|&nbsp;
+      <strong>AllocationDialog</strong>: Use <strong>Option B</strong> (quick chips) — the compact size fits within the dialog's 85vh constraint and lets users set
+      Q1–Q4 with one click. &nbsp;|&nbsp;
+      <strong>Dashboard filter</strong>: Use <strong>Option C</strong> (preset tiles) — executives typically think in quarters, not arbitrary date ranges.
+      Tile-based selection with a custom fallback is the fastest path.
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

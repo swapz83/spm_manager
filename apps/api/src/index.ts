@@ -13,6 +13,7 @@ import { projectRoutes } from './routes/projects.js';
 import { peopleRoutes } from './routes/people.js';
 import { assignmentRoutes } from './routes/assignments.js';
 import { publishRoutes } from './routes/publish.js';
+import { configRoutes } from './routes/config.js';
 
 const fastify = Fastify({ logger: true, pluginTimeout: 60000 });
 
@@ -22,6 +23,7 @@ await fastify.register(projectRoutes);
 await fastify.register(peopleRoutes);
 await fastify.register(assignmentRoutes);
 await fastify.register(publishRoutes);
+await fastify.register(configRoutes);
 
 fastify.get('/api/v1/health', async () => ({
   status: 'ok',

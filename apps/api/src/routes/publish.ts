@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { ServiceNowClient } from '../servicenow/client.js';
-import { getSnConfigFromEnv } from '../servicenow/config.js';
+import { getRuntimeConfig, isFullyConfigured } from '../servicenow/runtimeConfig.js';
 
 /**
  * Build the `breakdowns` payload expected by the SN unassignResources API.
@@ -91,17 +91,17 @@ export async function publishRoutes(fastify: FastifyInstance) {
       }[];
     };
 
-    const snConfig = getSnConfigFromEnv();
+    const cfg = getRuntimeConfig();
 
-    if (!snConfig) {
+    if (!isFullyConfigured()) {
       reply.code(500);
       return {
-        error: 'ServiceNow credentials not configured. Set SN_INSTANCE and SN_USER_TOKEN in .env',
-        details: 'SN_INSTANCE should be your instance URL (e.g., https://mycompany.service-now.com), SN_USER_TOKEN is the g_ck session token.'
+        error: 'ServiceNow credentials not configured. Go to Settings → ServiceNow Configuration.',
+        details: 'Instance URL, user email, X-UserToken, and Cookie are all required to publish changes.'
       };
     }
 
-    const sn = new ServiceNowClient(snConfig);
+    const sn = new ServiceNowClient({ instance: cfg.instance, token: cfg.userToken, cookie: cfg.cookie });
     const results: any[] = [];
     const errors: any[] = [];
 
@@ -357,7 +357,7 @@ export async function publishRoutes(fastify: FastifyInstance) {
 
     const warnings: string[] = [];
 
-    if (!getSnConfigFromEnv()) {
+    if (!isFullyConfigured()) {
       warnings.push('ServiceNow credentials not configured - publish will fail');
     }
 

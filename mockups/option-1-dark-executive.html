@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Option 1 — Dark Executive</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: #07111E; color: #E2E8F0; min-height: 100vh; }
+
+/* Header */
+.header {
+  background: #0B1829;
+  border-bottom: 1px solid #1E3050;
+  padding: 0 32px;
+  height: 58px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-icon { width: 32px; height: 32px; background: #1E54D4; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.brand-icon svg { width: 16px; height: 16px; color: white; }
+.brand-name { font-size: 15px; font-weight: 600; color: #F1F5F9; letter-spacing: -0.01em; }
+.brand-badge { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #60A5FA; background: rgba(96,165,250,0.12); border: 1px solid rgba(96,165,250,0.2); border-radius: 4px; padding: 2px 6px; }
+.status-pill { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; color: #34D399; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.2); border-radius: 99px; padding: 4px 10px; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: #34D399; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.nav { display: flex; align-items: center; gap: 2px; background: rgba(255,255,255,0.05); border-radius: 10px; padding: 4px; }
+.nav-btn { padding: 6px 16px; border-radius: 7px; font-size: 12px; font-weight: 500; cursor: pointer; border: none; background: transparent; color: rgba(255,255,255,0.4); display: flex; align-items: center; gap: 6px; transition: all 0.15s; }
+.nav-btn.active { background: #1E3A5F; color: #93C5FD; }
+
+/* Main */
+.main { max-width: 1400px; margin: 0 auto; padding: 24px 32px; }
+
+/* Filter strip */
+.filter-strip {
+  background: #0D1F35;
+  border: 1px solid #1E3050;
+  border-radius: 10px;
+  padding: 14px 20px;
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.filter-label { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #475569; white-space: nowrap; }
+.divider { width: 1px; height: 20px; background: #1E3050; flex-shrink: 0; }
+.filter-group { display: flex; flex-direction: column; gap: 4px; }
+.filter-group label { font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #475569; }
+.filter-group select, .filter-group input {
+  background: #07111E; border: 1px solid #1E3050; border-radius: 6px;
+  color: #94A3B8; font-size: 12px; padding: 5px 10px; outline: none;
+  font-family: 'Inter', sans-serif;
+}
+.btn-apply { margin-left: auto; background: #1E54D4; color: white; border: none; border-radius: 7px; padding: 7px 18px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.btn-export { background: transparent; color: #64748B; border: 1px solid #1E3050; border-radius: 7px; padding: 7px 14px; font-size: 12px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+
+/* KPI row */
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+.kpi-card {
+  background: #0D1F35;
+  border: 1px solid #1E3050;
+  border-radius: 10px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.kpi-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+.kpi-card.blue::before { background: linear-gradient(90deg, #1E54D4, #60A5FA); }
+.kpi-card.violet::before { background: linear-gradient(90deg, #7C3AED, #A78BFA); }
+.kpi-card.emerald::before { background: linear-gradient(90deg, #059669, #34D399); }
+.kpi-card.amber::before { background: linear-gradient(90deg, #D97706, #FCD34D); }
+.kpi-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+.kpi-card.blue .kpi-icon { background: rgba(30,84,212,0.15); color: #60A5FA; }
+.kpi-card.violet .kpi-icon { background: rgba(124,58,237,0.15); color: #A78BFA; }
+.kpi-card.emerald .kpi-icon { background: rgba(5,150,105,0.15); color: #34D399; }
+.kpi-card.amber .kpi-icon { background: rgba(217,119,6,0.15); color: #FCD34D; }
+.kpi-label { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #475569; margin-bottom: 8px; }
+.kpi-value { font-size: 40px; font-weight: 800; letter-spacing: -0.03em; color: #F1F5F9; line-height: 1; }
+
+/* Charts row */
+.charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+.chart-card {
+  background: #0D1F35;
+  border: 1px solid #1E3050;
+  border-radius: 10px;
+  padding: 20px;
+}
+.chart-title { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #475569; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+.chart-dl { font-size: 10px; color: #334155; cursor: pointer; border: 1px solid #1E3050; border-radius: 5px; padding: 3px 8px; background: #07111E; }
+
+/* Bar chart mock */
+.bar-chart { display: flex; flex-direction: column; gap: 10px; }
+.bar-row { display: flex; align-items: center; gap: 10px; }
+.bar-row-label { font-size: 11px; color: #64748B; width: 130px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+.bar-track { flex: 1; background: #0B1829; border-radius: 4px; height: 18px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; }
+.bar-val { font-size: 11px; color: #64748B; width: 24px; text-align: left; flex-shrink: 0; }
+
+/* Donut mock */
+.donut-wrap { display: flex; align-items: center; justify-content: center; gap: 28px; }
+.donut-svg { flex-shrink: 0; }
+.donut-legend { display: flex; flex-direction: column; gap: 8px; }
+.legend-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #64748B; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.legend-val { margin-left: auto; font-size: 11px; font-weight: 600; color: #94A3B8; }
+
+/* People tables */
+.tables-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.table-card { background: #0D1F35; border: 1px solid #1E3050; border-radius: 10px; padding: 20px; }
+.table-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.table-title { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #475569; }
+.badge { font-size: 10px; font-weight: 600; border-radius: 99px; padding: 3px 8px; display: flex; align-items: center; gap: 4px; }
+.badge-red { background: rgba(239,68,68,0.1); color: #F87171; }
+.badge-green { background: rgba(52,211,153,0.1); color: #34D399; }
+.badge-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.person-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #1A2E48; }
+.person-row:last-child { border-bottom: none; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+.av-red { background: rgba(239,68,68,0.15); color: #F87171; }
+.av-green { background: rgba(52,211,153,0.15); color: #34D399; }
+.person-info { flex: 1; min-width: 0; }
+.person-name { font-size: 12px; font-weight: 600; color: #CBD5E1; }
+.person-role { font-size: 10px; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.util-wrap { display: flex; align-items: center; gap: 8px; }
+.util-bar { width: 64px; height: 4px; background: #0B1829; border-radius: 2px; overflow: hidden; }
+.util-fill { height: 100%; border-radius: 2px; }
+.util-pct { font-size: 11px; font-weight: 700; width: 36px; text-align: right; }
+.free-pill { font-size: 10px; font-weight: 700; background: rgba(52,211,153,0.1); color: #34D399; border-radius: 99px; padding: 2px 8px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    </div>
+    <span class="brand-name">Resource Allocation</span>
+    <span class="brand-badge">SPM</span>
+    <span class="status-pill"><span class="status-dot"></span>ServiceNow</span>
+  </div>
+  <nav class="nav">
+    <button class="nav-btn active">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-btn">Manage Allocations</button>
+    <button class="nav-btn">Bulk Allocations</button>
+  </nav>
+</header>
+
+<div class="main">
+  <!-- FILTER STRIP -->
+  <div class="filter-strip">
+    <span class="filter-label">⧉ Filters</span>
+    <div class="divider"></div>
+    <div class="filter-group">
+      <label>Team (Manager)</label>
+      <select><option>All Teams</option></select>
+    </div>
+    <div class="filter-group">
+      <label>Scope</label>
+      <select><option>Entire Org</option></select>
+    </div>
+    <div class="filter-group">
+      <label>Start Date</label>
+      <input type="date" value="2025-01-01" />
+    </div>
+    <div class="filter-group">
+      <label>End Date</label>
+      <input type="date" value="2025-12-31" />
+    </div>
+    <button class="btn-apply">Apply</button>
+    <button class="btn-export">↓ Export PPT</button>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="kpi-row">
+    <div class="kpi-card blue">
+      <div class="kpi-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div class="kpi-label">Total People</div>
+      <div class="kpi-value">247</div>
+    </div>
+    <div class="kpi-card violet">
+      <div class="kpi-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+      <div class="kpi-label">Active Projects</div>
+      <div class="kpi-value">18</div>
+    </div>
+    <div class="kpi-card emerald">
+      <div class="kpi-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+      <div class="kpi-label">Assignments</div>
+      <div class="kpi-value">341</div>
+    </div>
+    <div class="kpi-card amber">
+      <div class="kpi-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+      <div class="kpi-label">Unassigned</div>
+      <div class="kpi-value">12</div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 1 -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title">Team Size by Project <span class="chart-dl">↓ PNG</span></div>
+      <div class="bar-chart">
+        <div class="bar-row"><span class="bar-row-label">Digital Transformation</span><div class="bar-track"><div class="bar-fill" style="width:85%;background:linear-gradient(90deg,#1E54D4,#60A5FA)"></div></div><span class="bar-val">42</span></div>
+        <div class="bar-row"><span class="bar-row-label">Cloud Migration</span><div class="bar-track"><div class="bar-fill" style="width:70%;background:linear-gradient(90deg,#7C3AED,#A78BFA)"></div></div><span class="bar-val">35</span></div>
+        <div class="bar-row"><span class="bar-row-label">ERP Modernisation</span><div class="bar-track"><div class="bar-fill" style="width:58%;background:linear-gradient(90deg,#0891B2,#67E8F9)"></div></div><span class="bar-val">29</span></div>
+        <div class="bar-row"><span class="bar-row-label">CRM Rollout</span><div class="bar-track"><div class="bar-fill" style="width:44%;background:linear-gradient(90deg,#059669,#34D399)"></div></div><span class="bar-val">22</span></div>
+        <div class="bar-row"><span class="bar-row-label">Data Analytics</span><div class="bar-track"><div class="bar-fill" style="width:36%;background:linear-gradient(90deg,#D97706,#FCD34D)"></div></div><span class="bar-val">18</span></div>
+        <div class="bar-row"><span class="bar-row-label">Security Upgrade</span><div class="bar-track"><div class="bar-fill" style="width:24%;background:linear-gradient(90deg,#DC2626,#F87171)"></div></div><span class="bar-val">12</span></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Utilization Distribution <span class="chart-dl">↓ PNG</span></div>
+      <div class="donut-wrap">
+        <svg class="donut-svg" width="160" height="160" viewBox="0 0 160 160">
+          <circle cx="80" cy="80" r="60" fill="none" stroke="#1E3050" stroke-width="28"/>
+          <circle cx="80" cy="80" r="60" fill="none" stroke="#60A5FA" stroke-width="28" stroke-dasharray="226 151" stroke-dashoffset="0" transform="rotate(-90 80 80)"/>
+          <circle cx="80" cy="80" r="60" fill="none" stroke="#34D399" stroke-width="28" stroke-dasharray="113 264" stroke-dashoffset="-226" transform="rotate(-90 80 80)"/>
+          <circle cx="80" cy="80" r="60" fill="none" stroke="#FCD34D" stroke-width="28" stroke-dasharray="56 321" stroke-dashoffset="-339" transform="rotate(-90 80 80)"/>
+          <circle cx="80" cy="80" r="60" fill="none" stroke="#F87171" stroke-width="28" stroke-dasharray="28 349" stroke-dashoffset="-395" transform="rotate(-90 80 80)"/>
+          <text x="80" y="74" text-anchor="middle" font-size="22" font-weight="800" fill="#F1F5F9" font-family="Inter">247</text>
+          <text x="80" y="91" text-anchor="middle" font-size="9" fill="#475569" font-family="Inter" letter-spacing="1">PEOPLE</text>
+        </svg>
+        <div class="donut-legend">
+          <div class="legend-row"><span class="legend-dot" style="background:#60A5FA"></span>76–100% <span class="legend-val">92</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:#34D399"></span>50–75% <span class="legend-val">46</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:#FCD34D"></span>Under 50% <span class="legend-val">23</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:#F87171"></span>Over-allocated <span class="legend-val">11</span></div>
+          <div class="legend-row"><span class="legend-dot" style="background:#1E3050"></span>Unallocated <span class="legend-val">12</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 2 -->
+  <div class="charts-row" style="margin-bottom:20px">
+    <div class="chart-card">
+      <div class="chart-title">Avg. Utilization by Department <span class="chart-dl">↓ PNG</span></div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:11px;color:#64748B;width:100px;text-align:right">Engineering</span>
+          <div style="flex:1;background:#07111E;border-radius:4px;height:20px;overflow:hidden"><div style="width:87%;height:100%;background:linear-gradient(90deg,#1E54D4,#60A5FA);border-radius:4px"></div></div>
+          <span style="font-size:11px;color:#60A5FA;width:36px">87%</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:11px;color:#64748B;width:100px;text-align:right">Architecture</span>
+          <div style="flex:1;background:#07111E;border-radius:4px;height:20px;overflow:hidden"><div style="width:74%;height:100%;background:linear-gradient(90deg,#7C3AED,#A78BFA);border-radius:4px"></div></div>
+          <span style="font-size:11px;color:#A78BFA;width:36px">74%</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:11px;color:#64748B;width:100px;text-align:right">PMO</span>
+          <div style="flex:1;background:#07111E;border-radius:4px;height:20px;overflow:hidden"><div style="width:68%;height:100%;background:linear-gradient(90deg,#0891B2,#67E8F9);border-radius:4px"></div></div>
+          <span style="font-size:11px;color:#67E8F9;width:36px">68%</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:11px;color:#64748B;width:100px;text-align:right">Security</span>
+          <div style="flex:1;background:#07111E;border-radius:4px;height:20px;overflow:hidden"><div style="width:55%;height:100%;background:linear-gradient(90deg,#059669,#34D399);border-radius:4px"></div></div>
+          <span style="font-size:11px;color:#34D399;width:36px">55%</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:11px;color:#64748B;width:100px;text-align:right">Data & Analytics</span>
+          <div style="flex:1;background:#07111E;border-radius:4px;height:20px;overflow:hidden"><div style="width:48%;height:100%;background:linear-gradient(90deg,#D97706,#FCD34D);border-radius:4px"></div></div>
+          <span style="font-size:11px;color:#FCD34D;width:36px">48%</span>
+        </div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Headcount by Role / Skill Type <span class="chart-dl">↓ PNG</span></div>
+      <div class="bar-chart">
+        <div class="bar-row"><span class="bar-row-label">Senior Engineer</span><div class="bar-track"><div class="bar-fill" style="width:80%;background:linear-gradient(90deg,#059669,#34D399)"></div></div><span class="bar-val">48</span></div>
+        <div class="bar-row"><span class="bar-row-label">Project Manager</span><div class="bar-track"><div class="bar-fill" style="width:62%;background:linear-gradient(90deg,#059669,#34D399)"></div></div><span class="bar-val">37</span></div>
+        <div class="bar-row"><span class="bar-row-label">Business Analyst</span><div class="bar-track"><div class="bar-fill" style="width:48%;background:linear-gradient(90deg,#059669,#34D399)"></div></div><span class="bar-val">29</span></div>
+        <div class="bar-row"><span class="bar-row-label">Solution Architect</span><div class="bar-track"><div class="bar-fill" style="width:38%;background:linear-gradient(90deg,#059669,#34D399)"></div></div><span class="bar-val">23</span></div>
+        <div class="bar-row"><span class="bar-row-label">QA Engineer</span><div class="bar-track"><div class="bar-fill" style="width:28%;background:linear-gradient(90deg,#059669,#34D399)"></div></div><span class="bar-val">17</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PEOPLE TABLES -->
+  <div class="tables-row">
+    <div class="table-card">
+      <div class="table-header">
+        <span class="table-title">Highest Utilization</span>
+        <span class="badge badge-red"><span class="badge-dot" style="background:#F87171"></span>6 hot spots</span>
+      </div>
+      <div class="person-row"><div class="avatar av-red">JD</div><div class="person-info"><div class="person-name">James Davidson</div><div class="person-role">Senior Engineer · 4 projects</div></div><div class="util-wrap"><div class="util-bar"><div class="util-fill" style="width:100%;background:#F87171"></div></div><span class="util-pct" style="color:#F87171">124%</span></div></div>
+      <div class="person-row"><div class="avatar av-red">SM</div><div class="person-info"><div class="person-name">Sarah Mitchell</div><div class="person-role">Solution Architect · 3 projects</div></div><div class="util-wrap"><div class="util-bar"><div class="util-fill" style="width:95%;background:#F87171"></div></div><span class="util-pct" style="color:#F87171">117%</span></div></div>
+      <div class="person-row"><div class="avatar av-red">AK</div><div class="person-info"><div class="person-name">Arjun Kumar</div><div class="person-role">Project Manager · 3 projects</div></div><div class="util-wrap"><div class="util-bar"><div class="util-fill" style="width:90%;background:#F97316"></div></div><span class="util-pct" style="color:#F97316">108%</span></div></div>
+      <div class="person-row"><div class="avatar av-red">LC</div><div class="person-info"><div class="person-name">Laura Chen</div><div class="person-role">Business Analyst · 3 projects</div></div><div class="util-wrap"><div class="util-bar"><div class="util-fill" style="width:88%;background:#F97316"></div></div><span class="util-pct" style="color:#F97316">95%</span></div></div>
+      <div class="person-row"><div class="avatar av-red">TW</div><div class="person-info"><div class="person-name">Tom Williams</div><div class="person-role">Senior Engineer · 2 projects</div></div><div class="util-wrap"><div class="util-bar"><div class="util-fill" style="width:83%;background:#FBBF24"></div></div><span class="util-pct" style="color:#FBBF24">91%</span></div></div>
+    </div>
+    <div class="table-card">
+      <div class="table-header">
+        <span class="table-title">Available Capacity</span>
+        <span class="badge badge-green"><span class="badge-dot" style="background:#34D399"></span>35 available</span>
+      </div>
+      <div class="person-row"><div class="avatar av-green">PR</div><div class="person-info"><div class="person-name">Priya Rajan</div><div class="person-role">QA Engineer · Engineering</div></div><span class="free-pill">100% free</span></div>
+      <div class="person-row"><div class="avatar av-green">MO</div><div class="person-info"><div class="person-name">Marcus O'Brien</div><div class="person-role">Business Analyst · PMO</div></div><span class="free-pill">100% free</span></div>
+      <div class="person-row"><div class="avatar av-green">FT</div><div class="person-info"><div class="person-name">Fatima Tran</div><div class="person-role">Senior Engineer · Security</div></div><span class="free-pill">75% free</span></div>
+      <div class="person-row"><div class="avatar av-green">RG</div><div class="person-info"><div class="person-name">Roberto Garcia</div><div class="person-role">Project Manager · Architecture</div></div><span class="free-pill">60% free</span></div>
+      <div class="person-row"><div class="avatar av-green">EL</div><div class="person-info"><div class="person-name">Emma Larsson</div><div class="person-role">Data Analyst · Data & Analytics</div></div><span class="free-pill">50% free</span></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -25,6 +25,8 @@ interface FiltersContextValue {
   setDraft: (f: Partial<Filters>) => void;
   /** Copy draft to applied (commit) */
   apply: () => void;
+  /** Atomically set partial filter fields in both draft and applied — skips the two-step draft → apply flow */
+  applyWith: (f: Partial<Filters>) => void;
   /** True when draft differs from applied */
   changed: boolean;
 }
@@ -43,6 +45,13 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
 
   const setDraft = (f: Partial<Filters>) => setDraftState(prev => ({ ...prev, ...f }));
   const apply = () => setApplied(draft);
+  const applyWith = (f: Partial<Filters>) => {
+    setDraftState(prev => {
+      const next = { ...prev, ...f };
+      setApplied(next);
+      return next;
+    });
+  };
   const changed =
     draft.manager !== applied.manager ||
     draft.startDate !== applied.startDate ||
@@ -50,7 +59,7 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     draft.includeSubOrgs !== applied.includeSubOrgs;
 
   return (
-    <FiltersContext.Provider value={{ applied, draft, setDraft, apply, changed }}>
+    <FiltersContext.Provider value={{ applied, draft, setDraft, apply, applyWith, changed }}>
       {children}
     </FiltersContext.Provider>
   );

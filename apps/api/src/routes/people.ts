@@ -247,8 +247,9 @@ export async function peopleRoutes(fastify: FastifyInstance) {
     `, params);
 
     // By department — date-aware
+    // Use department_name (human-readable) if available, fall back to department (may be sys_id for SN data)
     const byDepartment = await fastify.db.query(`
-      SELECT u.department,
+      SELECT COALESCE(NULLIF(u.department_name, ''), NULLIF(u.department, ''), 'Unknown') as department,
         COUNT(DISTINCT u.sys_id)::int as people_count,
         COALESCE(AVG(sub.total_alloc), 0)::int as avg_utilization
       FROM sys_user u
@@ -259,8 +260,8 @@ export async function peopleRoutes(fastify: FastifyInstance) {
         GROUP BY resource
       ) sub ON sub.resource = u.sys_id
       WHERE ${icFilter}
-      GROUP BY u.department
-      ORDER BY u.department
+      GROUP BY COALESCE(NULLIF(u.department_name, ''), NULLIF(u.department, ''), 'Unknown')
+      ORDER BY avg_utilization DESC
     `, params);
 
     // By skill/title — date-aware

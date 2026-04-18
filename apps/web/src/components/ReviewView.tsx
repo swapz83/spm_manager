@@ -124,31 +124,31 @@ export function ReviewView({ changes, startDate, endDate, onBack, onRemoveChange
   if (result) {
     return (
       <div className="max-w-[900px] mx-auto px-6 py-10">
-        <div className="bg-white rounded-2xl border border-slate-200 p-8">
+        <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(17,24,39,0.06),0_2px_8px_rgba(17,24,39,0.04)] p-8">
           <div className="flex items-center gap-3 mb-6">
             {result.success ? (
-              <CheckCircle className="w-8 h-8 text-emerald-500" />
+              <CheckCircle className="w-7 h-7 text-emerald-500" />
             ) : (
-              <AlertCircle className="w-8 h-8 text-amber-500" />
+              <AlertCircle className="w-7 h-7 text-amber-500" />
             )}
-            <h2 className="text-xl font-semibold text-slate-900">
+            <h2 className="text-[18px] font-semibold text-gray-900">
               {result.success ? 'Published Successfully' : 'Publish Completed with Issues'}
             </h2>
           </div>
 
-          <p className="text-sm text-slate-600 mb-6">{result.summary}</p>
+          <p className="text-sm text-gray-600 mb-6">{result.summary}</p>
 
           {result.published?.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-sm font-semibold text-slate-700 mb-3">Successful</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.08em] uppercase text-gray-400 mb-3">Successful</h3>
               <div className="space-y-2">
                 {result.published.map((r: any, i: number) => (
                   <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-emerald-50 border border-emerald-200">
                     <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                    <span className="text-sm text-slate-700">
+                    <span className="text-sm text-gray-700">
                       <strong>{r.user}</strong> &rarr; {r.project_name} ({r.allocation_pct}%)
                     </span>
-                    {r.sn_plan_id && <span className="text-xs text-slate-400 ml-auto">{r.sn_plan_id}</span>}
+                    {r.sn_plan_id && <span className="text-xs text-gray-400 ml-auto">{r.sn_plan_id}</span>}
                   </div>
                 ))}
               </div>
@@ -157,7 +157,7 @@ export function ReviewView({ changes, startDate, endDate, onBack, onRemoveChange
 
           {result.errors?.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-sm font-semibold text-slate-700 mb-3">Errors</h3>
+              <h3 className="text-[10px] font-bold tracking-[0.08em] uppercase text-gray-400 mb-3">Errors</h3>
               <div className="space-y-2">
                 {result.errors.map((e: any, i: number) => (
                   <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-red-50 border border-red-200">
@@ -171,7 +171,7 @@ export function ReviewView({ changes, startDate, endDate, onBack, onRemoveChange
 
           <button
             onClick={onPublished}
-            className="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="px-6 py-2.5 bg-[#1A56DB] text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
           >
             Done
           </button>
@@ -187,13 +187,13 @@ export function ReviewView({ changes, startDate, endDate, onBack, onRemoveChange
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-slate-600" />
+            <ArrowLeft className="w-4 h-4 text-gray-600" />
           </button>
           <div>
-            <h2 className="text-xl font-semibold text-slate-900">Review Changes</h2>
-            <p className="text-sm text-slate-500">
+            <h2 className="text-[18px] font-semibold text-gray-900">Review Changes</h2>
+            <p className="text-sm text-gray-500">
               {addChanges.length} new assignment{addChanges.length !== 1 ? 's' : ''}
               {endEarlyChanges.length > 0 && (
                 <span className="text-amber-600">
@@ -212,9 +212,9 @@ export function ReviewView({ changes, startDate, endDate, onBack, onRemoveChange
           onClick={handlePublish}
           disabled={publishing || changes.length === 0}
           className={cn(
-            'flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm',
+            'flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm',
             publishing
-              ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
               : 'bg-emerald-600 text-white hover:bg-emerald-700'
           )}
         >
@@ -227,36 +227,36 @@ export function ReviewView({ changes, startDate, endDate, onBack, onRemoveChange
       {addChanges.length > 0 && (
         <>
           {/* By Person */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
-            <h3 className="flex items-center gap-2 text-base font-semibold text-slate-900 mb-4">
-              <Plus className="w-4 h-4 text-blue-500" />
+          <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(17,24,39,0.06),0_2px_8px_rgba(17,24,39,0.04)] p-6 mb-5">
+            <h3 className="flex items-center gap-2 text-[13px] font-semibold text-gray-900 mb-4">
+              <Plus className="w-4 h-4 text-[#1A56DB]" />
               New Assignments &mdash; By Person
             </h3>
             <div className="space-y-4">
               {groupedByPerson.map((group) => (
-                <div key={group.resource_id} className="border border-slate-100 rounded-xl p-4">
+                <div key={group.resource_id} className="border border-gray-100 rounded-xl p-4">
                   <div className="flex items-center gap-3 mb-3">
                     <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-semibold"
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold"
                       style={{ backgroundColor: stringToColor(group.name) }}
                     >
                       {group.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                     </div>
                     <div>
-                      <div className="font-medium text-slate-900 text-sm">{group.name}</div>
-                      <div className="text-xs text-slate-400">{group.email}</div>
+                      <div className="font-medium text-gray-900 text-sm">{group.name}</div>
+                      <div className="text-xs text-gray-400">{group.email}</div>
                     </div>
-                    <span className="ml-auto text-xs text-slate-500">
-                      Total new: {group.projects.reduce((s, p) => s + p.allocation_pct, 0)}%
+                    <span className="ml-auto text-xs text-gray-500">
+                      Total new: <span className="font-semibold text-[#1A56DB]">{group.projects.reduce((s, p) => s + p.allocation_pct, 0)}%</span>
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {group.projects.map(p => (
                       <div key={p.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 group">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.project_color }} />
-                        <span className="text-sm text-slate-700">{p.project_name}</span>
-                        <span className="text-xs font-semibold text-blue-600">{p.allocation_pct}%</span>
-                        <span className="text-[10px] text-slate-400">{formatDate(p.start_date)}–{formatDate(p.end_date)}</span>
+                        <span className="text-sm text-gray-700">{p.project_name}</span>
+                        <span className="text-xs font-semibold text-[#1A56DB]">{p.allocation_pct}%</span>
+                        <span className="text-[10px] text-gray-400">{formatDate(p.start_date)}–{formatDate(p.end_date)}</span>
                         <button
                           onClick={() => onRemoveChange(p.id)}
                           className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-red-100 rounded transition-all"
@@ -272,26 +272,26 @@ export function ReviewView({ changes, startDate, endDate, onBack, onRemoveChange
           </div>
 
           {/* By Project */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
-            <h3 className="flex items-center gap-2 text-base font-semibold text-slate-900 mb-4">
-              <Plus className="w-4 h-4 text-blue-500" />
+          <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(17,24,39,0.06),0_2px_8px_rgba(17,24,39,0.04)] p-6 mb-5">
+            <h3 className="flex items-center gap-2 text-[13px] font-semibold text-gray-900 mb-4">
+              <Plus className="w-4 h-4 text-[#1A56DB]" />
               New Assignments &mdash; By Project
             </h3>
             <div className="grid grid-cols-2 gap-4">
               {groupedByProject.map((group) => (
-                <div key={group.number} className="border border-slate-100 rounded-xl p-4">
+                <div key={group.number} className="border border-gray-100 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: group.color }} />
-                    <div className="font-medium text-slate-900 text-sm">{group.name}</div>
-                    <span className="text-xs text-slate-400 font-mono">{group.number}</span>
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: group.color }} />
+                    <div className="font-medium text-gray-900 text-sm">{group.name}</div>
+                    <span className="text-[11px] text-gray-400 font-mono">{group.number}</span>
                   </div>
                   <div className="space-y-1.5">
                     {group.people.map(p => (
                       <div key={p.id} className="flex items-center justify-between text-sm">
-                        <span className="text-slate-600">{p.resource_name}</span>
+                        <span className="text-gray-600">{p.resource_name}</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-slate-400">{formatDate(p.start_date)}–{formatDate(p.end_date)}</span>
-                          <span className="text-xs font-semibold text-blue-600">{p.allocation_pct}%</span>
+                          <span className="text-[10px] text-gray-400">{formatDate(p.start_date)}–{formatDate(p.end_date)}</span>
+                          <span className="text-xs font-semibold text-[#1A56DB]">{p.allocation_pct}%</span>
                         </div>
                       </div>
                     ))}
@@ -305,12 +305,12 @@ export function ReviewView({ changes, startDate, endDate, onBack, onRemoveChange
 
       {/* ── End-Date Changes ── */}
       {endEarlyChanges.length > 0 && (
-        <div className="bg-white rounded-2xl border border-amber-200 p-6 mb-6">
-          <h3 className="flex items-center gap-2 text-base font-semibold text-slate-900 mb-1">
+        <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(17,24,39,0.06),0_2px_8px_rgba(17,24,39,0.04)] border border-amber-100 p-6 mb-5">
+          <h3 className="flex items-center gap-2 text-[13px] font-semibold text-gray-900 mb-1">
             <CalendarX2 className="w-4 h-4 text-amber-500" />
             Assignments Being Ended Early
           </h3>
-          <p className="text-xs text-slate-500 mb-4">
+          <p className="text-xs text-gray-500 mb-4">
             These existing assignments will have their end date moved up to avoid conflicts with the new assignments above.
           </p>
           <div className="space-y-3">
@@ -318,20 +318,20 @@ export function ReviewView({ changes, startDate, endDate, onBack, onRemoveChange
               <div key={group.resource_id} className="border border-amber-100 rounded-xl p-4 bg-amber-50/40">
                 <div className="flex items-center gap-3 mb-3">
                   <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold"
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold"
                     style={{ backgroundColor: stringToColor(group.name) }}
                   >
                     {group.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                   </div>
-                  <div className="font-medium text-slate-900 text-sm">{group.name}</div>
+                  <div className="font-medium text-gray-900 text-sm">{group.name}</div>
                 </div>
-                <div className="space-y-2 pl-11">
+                <div className="space-y-2 pl-10">
                   {group.changes.map(c => (
                     <div key={c.id} className="flex items-center gap-3 text-sm group">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c.project_color }} />
-                      <span className="text-slate-700">{c.project_name}</span>
-                      <span className="text-xs text-slate-400 font-mono">{c.project_number}</span>
-                      <span className="text-xs text-slate-500 ml-auto flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.project_color }} />
+                      <span className="text-gray-700">{c.project_name}</span>
+                      <span className="text-xs text-gray-400 font-mono">{c.project_number}</span>
+                      <span className="text-xs text-gray-500 ml-auto flex items-center gap-1">
                         end date &rarr;
                         <span className="font-semibold text-amber-700">{formatDate(c.new_end_date)}</span>
                       </span>
@@ -352,12 +352,12 @@ export function ReviewView({ changes, startDate, endDate, onBack, onRemoveChange
 
       {/* ── Unassignments (full deletes) ── */}
       {unassignChanges.length > 0 && (
-        <div className="bg-white rounded-2xl border border-red-200 p-6 mb-6">
-          <h3 className="flex items-center gap-2 text-base font-semibold text-slate-900 mb-1">
+        <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(17,24,39,0.06),0_2px_8px_rgba(17,24,39,0.04)] border border-red-100 p-6 mb-5">
+          <h3 className="flex items-center gap-2 text-[13px] font-semibold text-gray-900 mb-1">
             <Trash2 className="w-4 h-4 text-red-500" />
             Assignments Being Removed
           </h3>
-          <p className="text-xs text-slate-500 mb-4">
+          <p className="text-xs text-gray-500 mb-4">
             These assignments start on or after the new assignment&rsquo;s start date, so they will be fully removed instead of end-dated.
           </p>
           <div className="space-y-3">
@@ -365,20 +365,20 @@ export function ReviewView({ changes, startDate, endDate, onBack, onRemoveChange
               <div key={group.resource_id} className="border border-red-100 rounded-xl p-4 bg-red-50/40">
                 <div className="flex items-center gap-3 mb-3">
                   <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold"
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold"
                     style={{ backgroundColor: stringToColor(group.name) }}
                   >
                     {group.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                   </div>
-                  <div className="font-medium text-slate-900 text-sm">{group.name}</div>
+                  <div className="font-medium text-gray-900 text-sm">{group.name}</div>
                 </div>
-                <div className="space-y-2 pl-11">
+                <div className="space-y-2 pl-10">
                   {group.changes.map(c => (
                     <div key={c.id} className="flex items-center gap-3 text-sm group">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c.project_color }} />
-                      <span className="text-slate-700">{c.project_name}</span>
-                      <span className="text-xs text-slate-400 font-mono">{c.project_number}</span>
-                      <span className="text-[10px] text-slate-400">
+                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.project_color }} />
+                      <span className="text-gray-700">{c.project_name}</span>
+                      <span className="text-xs text-gray-400 font-mono">{c.project_number}</span>
+                      <span className="text-[10px] text-gray-400">
                         {formatDate(c.start_date)}–{formatDate(c.end_date)}
                       </span>
                       <span className="ml-auto text-xs font-semibold text-red-600">Remove</span>
@@ -399,8 +399,8 @@ export function ReviewView({ changes, startDate, endDate, onBack, onRemoveChange
 
       {/* Empty state */}
       {changes.length === 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
-          <p className="text-slate-400">No pending changes to review.</p>
+        <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(17,24,39,0.06),0_2px_8px_rgba(17,24,39,0.04)] p-12 text-center">
+          <p className="text-gray-400">No pending changes to review.</p>
         </div>
       )}
     </div>

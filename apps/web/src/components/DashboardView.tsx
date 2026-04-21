@@ -273,7 +273,7 @@ export function DashboardView() {
             onDownload={() => downloadChartPng(headcountRef.current, 'Team Size by Project')}
           />
           <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={projectStats} layout="vertical" margin={{ left: 10, right: 48 }}>
+            <BarChart data={[...projectStats].sort((a: any, b: any) => b.headcount - a.headcount).slice(0, 12)} layout="vertical" margin={{ left: 10, right: 48 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" horizontal={false} />
               <XAxis type="number" tick={{ fontSize: 11, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
               <YAxis type="category" dataKey="short_description" width={160} tick={truncatedYTick(20)} axisLine={false} tickLine={false} />

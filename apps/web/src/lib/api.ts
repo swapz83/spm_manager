@@ -65,6 +65,14 @@ export const api = {
     preview: (data: any) => request<any>('/publish/preview', { method: 'POST', body: JSON.stringify(data) }),
     execute: (data: any) => request<any>('/publish', { method: 'POST', body: JSON.stringify(data) }),
   },
+  sync: {
+    status: () => request<{
+      state: 'idle' | 'syncing' | 'done' | 'error';
+      progress: number;
+      step: string;
+      error?: string;
+    }>('/sync/status'),
+  },
   config: {
     get: () => request<{
       configured: boolean;

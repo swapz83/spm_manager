@@ -7,6 +7,7 @@ import { seed } from './seed.js';
 import { ServiceNowClient } from '../servicenow/client.js';
 import { getRuntimeConfig, isFullyConfigured } from '../servicenow/runtimeConfig.js';
 import { syncFromServiceNow } from '../servicenow/sync.js';
+import { setSyncStatus } from '../servicenow/syncStatus.js';
 import type { FastifyInstance } from 'fastify';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -38,6 +39,7 @@ export async function getDb(): Promise<PGlite> {
       });
 
       console.log('[DB] ServiceNow credentials detected — testing connection...');
+      setSyncStatus({ state: 'syncing', progress: 0, step: 'Testing connection…' });
       const ok = await sn.testConnection();
 
       if (ok) {
@@ -58,9 +60,11 @@ export async function getDb(): Promise<PGlite> {
           return db;
         } catch (err: any) {
           console.error('[DB] ServiceNow sync failed, falling back to mock data:', err.message);
+          setSyncStatus({ state: 'error', progress: 0, step: '', error: err.message });
         }
       } else {
         console.warn('[DB] ServiceNow connection failed (token expired?) — falling back to mock data');
+        setSyncStatus({ state: 'idle', progress: 0, step: '' });
       }
     } else {
       console.log('[DB] No ServiceNow credentials in env — using mock seed data');

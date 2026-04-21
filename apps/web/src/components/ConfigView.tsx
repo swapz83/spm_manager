@@ -53,6 +53,8 @@ export function ConfigView() {
       queryClient.invalidateQueries({ queryKey: ['managers'] });
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       queryClient.invalidateQueries({ queryKey: ['assignments'] });
+      // Kick off sync-status polling so the SyncBar picks up the background sync
+      queryClient.invalidateQueries({ queryKey: ['sync-status'] });
       // Clear sensitive fields after save
       setFields(prev => ({ ...prev, userToken: '', cookie: '' }));
       const type = result.connected ? 'success' : result.configured ? 'warn' : 'error';

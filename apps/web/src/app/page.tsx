@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Header, type AppMode } from '@/components/Header';
+import { SyncBar } from '@/components/SyncBar';
 import { DashboardView } from '@/components/DashboardView';
 import { ManageView } from '@/components/ManageView';
 import { BulkAllocationsView } from '@/components/BulkAllocationsView';
@@ -12,6 +13,7 @@ export default function App() {
   return (
     <div className="min-h-screen">
       <Header mode={mode} onModeChange={setMode} />
+      <SyncBar />
       {mode === 'dashboard' && <DashboardView />}
       {mode === 'manage' && <ManageView />}
       {mode === 'bulk' && <BulkAllocationsView />}

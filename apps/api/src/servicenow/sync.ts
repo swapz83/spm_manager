@@ -18,6 +18,7 @@
 
 import type { PGlite } from '@electric-sql/pglite';
 import { ServiceNowClient } from './client.js';
+import { setSyncStatus } from './syncStatus.js';
 
 // ── ServiceNow reference field helper ──────────────────────────────────
 // SN returns reference fields as { link, value } objects (not plain strings)
@@ -115,6 +116,7 @@ export async function syncFromServiceNow(db: PGlite, sn: ServiceNowClient, userE
   querySeq = 0; // reset sequence for each sync run
 
   // ---- 1. Find myself ------------------------------------------------
+  setSyncStatus({ state: 'syncing', progress: 5, step: 'Looking up your user record…' });
   console.log(`[SN Sync] Looking up user by email: ${userEmail}`);
 
   const me = await sn.queryOne<SnUser>({
@@ -128,10 +130,11 @@ export async function syncFromServiceNow(db: PGlite, sn: ServiceNowClient, userE
   }
   console.log(`[SN Sync] Found myself: ${me.first_name} ${me.last_name} (${me.sys_id})`);
 
-  // ---- 2. Find my org (BFS up to 4 levels deep) ----------------------
-  console.log('[SN Sync] Fetching org hierarchy (up to 4 levels)...');
+  // ---- 2. Find my org (BFS up to 6 levels deep) ----------------------
+  setSyncStatus({ progress: 10, step: 'Fetching org hierarchy…' });
+  console.log('[SN Sync] Fetching org hierarchy (up to 6 levels)...');
 
-  const MAX_DEPTH = 4;
+  const MAX_DEPTH = 6;
   const allReports: SnUser[] = [];
   const seen = new Set<string>([me.sys_id]);
   let frontier: string[] = [me.sys_id];
@@ -158,6 +161,7 @@ export async function syncFromServiceNow(db: PGlite, sn: ServiceNowClient, userE
     }
 
     console.log(`[SN Sync] Level ${depth}: ${nextLevel.length} reports`);
+    setSyncStatus({ progress: 10 + Math.round((depth / MAX_DEPTH) * 25), step: `Org level ${depth}/${MAX_DEPTH} — ${nextLevel.length} people found…` });
     allReports.push(...nextLevel);
     frontier = nextLevel.map(u => u.sys_id);
   }
@@ -172,6 +176,7 @@ export async function syncFromServiceNow(db: PGlite, sn: ServiceNowClient, userE
   }
 
   // ---- 3. Find assignments for all direct reports --------------------
+  setSyncStatus({ progress: 40, step: `Fetching assignments for ${userSysIds.length} people…` });
   console.log('[SN Sync] Fetching resource assignments...');
 
   // ServiceNow encoded query: user_resource IN list
@@ -199,6 +204,7 @@ export async function syncFromServiceNow(db: PGlite, sn: ServiceNowClient, userE
     }
   }
   console.log(`[SN Sync] Found ${assignments.length} assignments`);
+  setSyncStatus({ progress: 55, step: `Found ${assignments.length} assignments — fetching projects…` });
 
   // ---- 4. Collect unique project sys_ids and fetch project details ----
   // a.task is a reference field (object with .value = sys_id); extract with ref()
@@ -231,6 +237,7 @@ export async function syncFromServiceNow(db: PGlite, sn: ServiceNowClient, userE
   }
 
   // ---- 5. Write everything into PGlite --------------------------------
+  setSyncStatus({ progress: 70, step: 'Saving people to local database…' });
   console.log('[SN Sync] Populating local database...');
 
   // -- Users --
@@ -266,6 +273,7 @@ export async function syncFromServiceNow(db: PGlite, sn: ServiceNowClient, userE
     );
   }
   console.log('[SN Sync] Populating Users DONE');
+  setSyncStatus({ progress: 80, step: 'Saving projects…' });
 
   // -- Projects --
   for (const p of projects) {
@@ -306,6 +314,7 @@ export async function syncFromServiceNow(db: PGlite, sn: ServiceNowClient, userE
   // (ServiceNow guarantees uniqueness on number, but just in case)
 
   // -- Assignments --
+  setSyncStatus({ progress: 88, step: 'Saving assignments…' });
   // SN stores effort as FTE fraction (0.0–1.0); our schema uses allocation_pct (1–100).
   // Some SN instances use whole numbers (50 meaning 50%) if effort_type is "percentage".
   const fetchedProjectIds = new Set(projects.map(p => p.sys_id));
@@ -370,5 +379,6 @@ export async function syncFromServiceNow(db: PGlite, sn: ServiceNowClient, userE
   }
   console.log('[SN Sync] Populating Assignments DONE');
 
+  setSyncStatus({ state: 'done', progress: 100, step: `Synced ${allUsers.length} people, ${projects.length} projects, ${assignments.length} assignments` });
   console.log(`[SN Sync] Done — ${allUsers.length} users, ${projects.length} projects, ${assignments.length} assignments`);
 }

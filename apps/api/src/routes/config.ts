@@ -3,8 +3,12 @@ import type { FastifyInstance } from 'fastify';
 import { getRuntimeConfig, setRuntimeConfig, isFullyConfigured, type SnRuntimeConfig } from '../servicenow/runtimeConfig.js';
 import { ServiceNowClient } from '../servicenow/client.js';
 import { syncFromServiceNow } from '../servicenow/sync.js';
+import { getSyncStatus, setSyncStatus } from '../servicenow/syncStatus.js';
 
 export const configRoutes = fp(async (fastify: FastifyInstance) => {
+
+  /** GET /api/v1/sync/status — poll sync progress */
+  fastify.get('/api/v1/sync/status', async () => getSyncStatus());
 
   /** GET /api/v1/config/servicenow — return current config status + masked credentials */
   fastify.get('/api/v1/config/servicenow', async () => {
@@ -88,6 +92,7 @@ export const configRoutes = fp(async (fastify: FastifyInstance) => {
     console.log('[Config] All tables cleared (including staged assignments).');
 
     // ── Background resync (fire-and-forget so the HTTP response returns immediately) ─
+    setSyncStatus({ state: 'syncing', progress: 0, step: 'Starting sync…' });
     (async () => {
       try {
         console.log('[Config] Starting live resync...');
@@ -95,6 +100,7 @@ export const configRoutes = fp(async (fastify: FastifyInstance) => {
         console.log('[Config] Background resync complete');
       } catch (err: any) {
         console.error('[Config] Background resync failed:', err.message);
+        setSyncStatus({ state: 'error', progress: 0, step: '', error: err.message });
       }
     })();
 

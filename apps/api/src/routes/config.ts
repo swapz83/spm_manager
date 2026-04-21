@@ -77,11 +77,20 @@ export const configRoutes = fp(async (fastify: FastifyInstance) => {
 
     fastify.snClient = sn;
 
-    // ── Background resync (no truncation — upsert only) ───────────────────
-    // We fire-and-forget so the HTTP response returns immediately.
+    // ── Clear all previous data synchronously before responding ──────────
+    // This ensures the frontend never sees stale/mock data after a config change.
+    console.log('[Config] Credentials changed & verified — clearing all previous data...');
+    await fastify.db.exec(`
+      TRUNCATE sn_plng_att_core_resource_assignment;
+      TRUNCATE pm_project;
+      TRUNCATE sys_user;
+    `);
+    console.log('[Config] All tables cleared (including staged assignments).');
+
+    // ── Background resync (fire-and-forget so the HTTP response returns immediately) ─
     (async () => {
       try {
-        console.log('[Config] Credentials changed & verified — starting background resync...');
+        console.log('[Config] Starting live resync...');
         await syncFromServiceNow(fastify.db, sn, cfg.userEmail, cfg.instance);
         console.log('[Config] Background resync complete');
       } catch (err: any) {
@@ -96,7 +105,7 @@ export const configRoutes = fp(async (fastify: FastifyInstance) => {
       userEmail: cfg.userEmail,
       hasUserToken: true,
       hasCookie: true,
-      message: 'Connected. ServiceNow data sync started in background.',
+      message: 'Connected. Previous data cleared — ServiceNow sync started in background.',
     };
   });
 });

@@ -48,6 +48,11 @@ export function ConfigView() {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['config', 'servicenow'] });
       queryClient.invalidateQueries({ queryKey: ['health'] });
+      // Purge all cached data so stale/mock results don't linger after credential change
+      queryClient.invalidateQueries({ queryKey: ['people'] });
+      queryClient.invalidateQueries({ queryKey: ['managers'] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['assignments'] });
       // Clear sensitive fields after save
       setFields(prev => ({ ...prev, userToken: '', cookie: '' }));
       const type = result.connected ? 'success' : result.configured ? 'warn' : 'error';

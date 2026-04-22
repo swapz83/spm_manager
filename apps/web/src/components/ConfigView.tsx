@@ -21,12 +21,21 @@ export function ConfigView() {
     refetchInterval: false,
   });
 
+  // Convenience default for Instance URL so users don't re-type it.
+  // Email is offered via the quick-pick badges below the input instead.
+  // Any server-returned value overrides these in the useEffect below.
   const [fields, setFields] = useState<FieldState>({
-    instance: '',
+    instance: 'https://equinix.service-now.com',
     userEmail: '',
     userToken: '',
     cookie: '',
   });
+
+  const EMAIL_QUICK_PICKS = [
+    'jvavra@equinix.com',
+    'swpathare@ap.equinix.com',
+    'hhusna@equinix.com',
+  ];
 
   // Pre-fill instance and email from server when loaded
   useEffect(() => {
@@ -228,6 +237,27 @@ export function ConfigView() {
                   onChange={e => setFields(f => ({ ...f, userEmail: e.target.value }))}
                   className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-[13px] text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-[#1A56DB]"
                 />
+                <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                  <span className="text-[11px] text-gray-400 mr-1">Quick pick:</span>
+                  {EMAIL_QUICK_PICKS.map(email => {
+                    const isActive = fields.userEmail === email;
+                    return (
+                      <button
+                        key={email}
+                        type="button"
+                        onClick={() => setFields(f => ({ ...f, userEmail: email }))}
+                        className={cn(
+                          'text-[11px] px-2 py-0.5 rounded-full border transition-colors',
+                          isActive
+                            ? 'bg-[#1A56DB] text-white border-[#1A56DB]'
+                            : 'bg-blue-50 text-[#1A56DB] border-blue-200 hover:bg-blue-100',
+                        )}
+                      >
+                        {email}
+                      </button>
+                    );
+                  })}
+                </div>
                 <p className="text-[11px] text-gray-400 mt-1">
                   Used to locate your org in ServiceNow — must match your sys_user email.
                 </p>

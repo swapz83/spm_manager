@@ -79,10 +79,22 @@ export function BulkAllocationsView() {
 
   /* ── People multi-select ── */
   const [selectedPeople, setSelectedPeople] = useState<Set<string>>(new Set());
+  const [showSelectedPeopleModal, setShowSelectedPeopleModal] = useState(false);
 
-  /* ── Projects multi-select ── */
-  const [selectedProjects, setSelectedProjects] = useState<SelectedProject[]>([]);
+  /* ── Projects multi-select ──
+     `allProjects` = the full pool the user can pick from (seeded from DB query
+     + anything added via ServiceNow search). `selectedProjectIds` = the subset
+     currently checked. Deriving `selectedProjects` from these keeps the
+     downstream logic (allocation math, pending-change generation) unchanged. */
+  const [allProjects, setAllProjects] = useState<SelectedProject[]>([]);
+  const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set());
   const [showProjectSearch, setShowProjectSearch] = useState(false);
+  const [showSelectedProjectsModal, setShowSelectedProjectsModal] = useState(false);
+
+  const selectedProjects = useMemo(
+    () => allProjects.filter(p => selectedProjectIds.has(p.sys_id)),
+    [allProjects, selectedProjectIds],
+  );
 
   /* ── Pending changes & review ── */
   const [pendingChanges, setPendingChanges] = useState<PendingChange[]>([]);
@@ -98,7 +110,7 @@ export function BulkAllocationsView() {
   );
   const { data: dbProjects, isLoading: loadingProjects } = useProjects(appliedManager, startDate, endDate, applied.includeSubOrgs);
 
-  // Seed selectedProjects from DB projects on first load / filter change.
+  // Seed projects from DB on first load / filter change.
   // Re-seed when any applied filter (manager or date window) changes.
   const [seededFromQuery, setSeededFromQuery] = useState(false);
   const [seededKey, setSeededKey] = useState<string>('');
@@ -107,7 +119,7 @@ export function BulkAllocationsView() {
     if (!dbProjects) return;
     const filtersChanged = seededKey !== currentKey;
     if (filtersChanged || !seededFromQuery) {
-      setSelectedProjects(dbProjects.map((p: any) => ({
+      const seeded: SelectedProject[] = dbProjects.map((p: any) => ({
         sys_id: p.sys_id,
         number: p.number,
         short_description: p.short_description,
@@ -115,7 +127,9 @@ export function BulkAllocationsView() {
         state: p.state,
         start_date: p.start_date,
         end_date: p.end_date,
-      })));
+      }));
+      setAllProjects(seeded);
+      setSelectedProjectIds(new Set(seeded.map(p => p.sys_id)));
       setSeededFromQuery(true);
       setSeededKey(currentKey);
     }
@@ -124,7 +138,8 @@ export function BulkAllocationsView() {
   const handleApplyFilters = () => {
     apply();
     setSelectedPeople(new Set());
-    setSelectedProjects([]);
+    setAllProjects([]);
+    setSelectedProjectIds(new Set());
     setSeededFromQuery(false);  // re-seed projects from new query results
   };
 
@@ -143,9 +158,19 @@ export function BulkAllocationsView() {
 
   const clearPeopleSelection = () => setSelectedPeople(new Set());
 
-  const removeProject = (sysId: string) => {
-    setSelectedProjects(prev => prev.filter(p => p.sys_id !== sysId));
+  const toggleProject = (sysId: string) => {
+    setSelectedProjectIds(prev => {
+      const next = new Set(prev);
+      if (next.has(sysId)) next.delete(sysId); else next.add(sysId);
+      return next;
+    });
   };
+
+  const selectAllProjects = () => {
+    setSelectedProjectIds(new Set(allProjects.map(p => p.sys_id)));
+  };
+
+  const clearProjectSelection = () => setSelectedProjectIds(new Set());
 
   /* ── Compute allocation preview ── */
   const allocationPreview = useMemo(() => {
@@ -252,7 +277,9 @@ export function BulkAllocationsView() {
     setPendingChanges([]);
     setShowReview(false);
     setSelectedPeople(new Set());
-    setSelectedProjects([]);
+    setAllProjects([]);
+    setSelectedProjectIds(new Set());
+    setSeededFromQuery(false);
   };
 
   /* ── Review view ── */
@@ -346,8 +373,17 @@ export function BulkAllocationsView() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* ══════ LEFT: People ══════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+        {/* ══════ LEFT COLUMN: Selected People Summary + People ══════ */}
+        <div className="flex flex-col gap-5">
+        {selectedPeople.size > 0 && people && (
+          <SelectedPeopleSummary
+            selectedIds={selectedPeople}
+            people={people}
+            onRemove={togglePerson}
+            onOpenAll={() => setShowSelectedPeopleModal(true)}
+          />
+        )}
         <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(17,24,39,0.06),0_2px_8px_rgba(17,24,39,0.04)] overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -442,8 +478,17 @@ export function BulkAllocationsView() {
             )}
           </div>
         </div>
+        </div>
 
-        {/* ══════ RIGHT: Projects ══════ */}
+        {/* ══════ RIGHT COLUMN: Selected Projects Summary + Projects ══════ */}
+        <div className="flex flex-col gap-5">
+        {selectedProjects.length > 0 && (
+          <SelectedProjectsSummary
+            projects={selectedProjects}
+            onRemove={toggleProject}
+            onOpenAll={() => setShowSelectedProjectsModal(true)}
+          />
+        )}
         <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(17,24,39,0.06),0_2px_8px_rgba(17,24,39,0.04)] overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -455,13 +500,23 @@ export function BulkAllocationsView() {
                 </span>
               )}
             </div>
-            <button
-              onClick={() => setShowProjectSearch(true)}
-              className="flex items-center gap-1.5 text-xs font-semibold text-[#1A56DB] hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
-            >
-              <Search className="w-3 h-3" />
-              Add from ServiceNow
-            </button>
+            <div className="flex items-center gap-3">
+              {allProjects.length > 0 && (
+                <button
+                  onClick={selectedProjectIds.size === allProjects.length ? clearProjectSelection : selectAllProjects}
+                  className="text-xs text-[#1A56DB] hover:text-blue-700 font-semibold"
+                >
+                  {selectedProjectIds.size === allProjects.length ? 'Deselect All' : 'Select All'}
+                </button>
+              )}
+              <button
+                onClick={() => setShowProjectSearch(true)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-[#1A56DB] hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+              >
+                <Search className="w-3 h-3" />
+                Add from ServiceNow
+              </button>
+            </div>
           </div>
 
           <div className="p-4 max-h-[60vh] overflow-y-auto">
@@ -469,22 +524,37 @@ export function BulkAllocationsView() {
               <div className="text-center py-12">
                 <Loader2 className="w-6 h-6 animate-spin mx-auto text-[#1A56DB]" />
               </div>
-            ) : selectedProjects.length === 0 ? (
+            ) : allProjects.length === 0 ? (
               <div className="text-center py-12 text-gray-400">
                 <FolderKanban className="w-10 h-10 mx-auto mb-3 opacity-40" />
                 <p className="text-sm">No projects found</p>
                 <p className="text-xs mt-1">Search and add projects from ServiceNow</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {selectedProjects.map((proj, idx) => {
+              <div className="space-y-1.5">
+                {allProjects.map((proj) => {
                   const badge = STATE_BADGES[proj.state] || STATE_BADGES.planning;
-                  const alloc = allocationPreview?.[idx];
+                  const isSelected = selectedProjectIds.has(proj.sys_id);
+                  const alloc = allocationPreview?.find(a => a.sys_id === proj.sys_id);
                   return (
-                    <div
+                    <button
                       key={proj.sys_id}
-                      className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white group hover:bg-gray-50 transition-colors"
+                      type="button"
+                      onClick={() => toggleProject(proj.sys_id)}
+                      className={cn(
+                        'w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left',
+                        isSelected
+                          ? 'border-blue-300 bg-blue-50 ring-1 ring-blue-200'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 bg-white',
+                      )}
                     >
+                      {/* Checkbox */}
+                      <div className={cn(
+                        'w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors',
+                        isSelected ? 'bg-[#1A56DB] border-[#1A56DB]' : 'border-gray-300',
+                      )}>
+                        {isSelected && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
+                      </div>
                       <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: proj.color || '#94a3b8' }} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -495,19 +565,13 @@ export function BulkAllocationsView() {
                         </div>
                         <div className="text-sm font-medium text-gray-800 truncate">{proj.short_description}</div>
                       </div>
-                      {/* Allocation preview */}
+                      {/* Allocation preview — shown only when project is selected */}
                       {alloc && selectedPeople.size > 0 && (
                         <span className="text-sm font-bold text-[#1A56DB] tabular-nums">
                           {alloc.allocation_pct}%
                         </span>
                       )}
-                      <button
-                        onClick={() => removeProject(proj.sys_id)}
-                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded-lg transition-all"
-                      >
-                        <X className="w-3.5 h-3.5 text-red-500" />
-                      </button>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -539,6 +603,7 @@ export function BulkAllocationsView() {
               </div>
             </div>
           )}
+        </div>
         </div>
       </div>
 
@@ -573,16 +638,337 @@ export function BulkAllocationsView() {
       {/* ── Project Search Dialog ── */}
       {showProjectSearch && (
         <ProjectSearchDialog
-          existingIds={new Set(selectedProjects.map(p => p.sys_id))}
+          existingIds={new Set(allProjects.map(p => p.sys_id))}
           onSelect={(proj) => {
-            setSelectedProjects(prev => {
+            setAllProjects(prev => {
               if (prev.find(p => p.sys_id === proj.sys_id)) return prev;
               return [...prev, proj];
+            });
+            setSelectedProjectIds(prev => {
+              const next = new Set(prev);
+              next.add(proj.sys_id);
+              return next;
             });
           }}
           onClose={() => setShowProjectSearch(false)}
         />
       )}
+
+      {/* ── Selected People modal ── */}
+      {showSelectedPeopleModal && people && (
+        <SelectedPeopleModal
+          selectedIds={selectedPeople}
+          people={people}
+          onRemove={togglePerson}
+          onClose={() => setShowSelectedPeopleModal(false)}
+        />
+      )}
+
+      {/* ── Selected Projects modal ── */}
+      {showSelectedProjectsModal && (
+        <SelectedProjectsModal
+          projects={selectedProjects}
+          onRemove={toggleProject}
+          onClose={() => setShowSelectedProjectsModal(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Selected People — summary card (above People) + modal
+   ═══════════════════════════════════════════════════════════════ */
+const MAX_VISIBLE_PEOPLE = 10;
+
+function SelectedPeopleSummary({
+  selectedIds,
+  people,
+  onRemove,
+  onOpenAll,
+}: {
+  selectedIds: Set<string>;
+  people: any[];
+  onRemove: (id: string) => void;
+  onOpenAll: () => void;
+}) {
+  const selected = people.filter((p: any) => selectedIds.has(p.sys_id));
+  if (selected.length === 0) return null;
+  const visible = selected.slice(0, MAX_VISIBLE_PEOPLE);
+  const overflow = selected.length - visible.length;
+
+  return (
+    <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(17,24,39,0.06),0_2px_8px_rgba(17,24,39,0.04)] overflow-hidden">
+      <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
+        <Users className="w-3.5 h-3.5 text-gray-400" />
+        <h3 className="text-[13px] font-semibold text-gray-800">Selected People</h3>
+        <span className="text-xs font-semibold text-[#1A56DB] bg-blue-50 px-2 py-0.5 rounded-full">
+          {selected.length}
+        </span>
+      </div>
+      <div className="p-4 flex flex-wrap gap-2">
+        {visible.map((person: any) => (
+          <span
+            key={person.sys_id}
+            className="inline-flex items-center gap-2 pl-1 pr-2 py-1 rounded-full bg-blue-50 border border-blue-200 text-xs font-medium text-gray-800"
+          >
+            <span
+              className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-semibold flex-shrink-0"
+              style={{ backgroundColor: stringToColor(person.first_name + person.last_name) }}
+            >
+              {getInitials(person.first_name, person.last_name)}
+            </span>
+            <span className="max-w-[140px] truncate">
+              {person.first_name} {person.last_name}
+            </span>
+            <button
+              type="button"
+              onClick={() => onRemove(person.sys_id)}
+              className="p-0.5 hover:bg-blue-200 rounded-full transition-colors"
+              aria-label={`Remove ${person.first_name} ${person.last_name}`}
+            >
+              <X className="w-3 h-3 text-blue-700" />
+            </button>
+          </span>
+        ))}
+        {overflow > 0 && (
+          <button
+            type="button"
+            onClick={onOpenAll}
+            className="inline-flex items-center text-xs font-semibold text-[#1A56DB] hover:text-blue-700 underline underline-offset-2 px-2 py-1"
+          >
+            ... {overflow} more
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SelectedPeopleModal({
+  selectedIds,
+  people,
+  onRemove,
+  onClose,
+}: {
+  selectedIds: Set<string>;
+  people: any[];
+  onRemove: (id: string) => void;
+  onClose: () => void;
+}) {
+  const selected = people.filter((p: any) => selectedIds.has(p.sys_id));
+  return (
+    <div
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 overflow-hidden max-h-[80vh] flex flex-col"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-gray-400" />
+            <h3 className="text-[15px] font-semibold text-gray-900">
+              Selected People ({selected.length})
+            </h3>
+          </div>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+            <X className="w-4 h-4 text-gray-400" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
+          {selected.length === 0 ? (
+            <div className="text-center py-8 text-gray-400 text-sm">No people selected</div>
+          ) : (
+            <div className="space-y-1.5">
+              {selected.map((person: any) => (
+                <div
+                  key={person.sys_id}
+                  className="flex items-center gap-3 p-2.5 rounded-lg border border-gray-200 bg-white"
+                >
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-semibold flex-shrink-0"
+                    style={{ backgroundColor: stringToColor(person.first_name + person.last_name) }}
+                  >
+                    {getInitials(person.first_name, person.last_name)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-gray-900 truncate">
+                      {person.first_name} {person.last_name}
+                    </div>
+                    {person.title && (
+                      <div className="text-xs text-gray-500 truncate">{person.title}</div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onRemove(person.sys_id)}
+                    className="p-1 hover:bg-red-100 rounded-lg transition-colors"
+                    aria-label={`Remove ${person.first_name} ${person.last_name}`}
+                  >
+                    <X className="w-3.5 h-3.5 text-red-500" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="px-6 py-3 border-t border-gray-200 bg-gray-50 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-5 py-2 bg-[#1A56DB] text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Selected Projects — summary card (above Projects) + modal
+   ═══════════════════════════════════════════════════════════════ */
+const MAX_VISIBLE_PROJECTS = 10;
+
+function SelectedProjectsSummary({
+  projects,
+  onRemove,
+  onOpenAll,
+}: {
+  projects: SelectedProject[];
+  onRemove: (id: string) => void;
+  onOpenAll: () => void;
+}) {
+  if (projects.length === 0) return null;
+  const visible = projects.slice(0, MAX_VISIBLE_PROJECTS);
+  const overflow = projects.length - visible.length;
+
+  return (
+    <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(17,24,39,0.06),0_2px_8px_rgba(17,24,39,0.04)] overflow-hidden">
+      <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
+        <FolderKanban className="w-3.5 h-3.5 text-gray-400" />
+        <h3 className="text-[13px] font-semibold text-gray-800">Selected Projects</h3>
+        <span className="text-xs font-semibold text-[#1A56DB] bg-blue-50 px-2 py-0.5 rounded-full">
+          {projects.length}
+        </span>
+      </div>
+      <div className="p-4 flex flex-wrap gap-2">
+        {visible.map((proj) => (
+          <span
+            key={proj.sys_id}
+            className="inline-flex items-center gap-2 pl-2 pr-2 py-1 rounded-full bg-blue-50 border border-blue-200 text-xs font-medium text-gray-800 max-w-full"
+          >
+            <span
+              className="w-2 h-2 rounded-full flex-shrink-0"
+              style={{ backgroundColor: proj.color || '#94a3b8' }}
+            />
+            <span className="font-mono text-[10px] text-gray-500">{proj.number}</span>
+            <span className="max-w-[180px] truncate">{proj.short_description}</span>
+            <button
+              type="button"
+              onClick={() => onRemove(proj.sys_id)}
+              className="p-0.5 hover:bg-blue-200 rounded-full transition-colors"
+              aria-label={`Remove ${proj.short_description}`}
+            >
+              <X className="w-3 h-3 text-blue-700" />
+            </button>
+          </span>
+        ))}
+        {overflow > 0 && (
+          <button
+            type="button"
+            onClick={onOpenAll}
+            className="inline-flex items-center text-xs font-semibold text-[#1A56DB] hover:text-blue-700 underline underline-offset-2 px-2 py-1"
+          >
+            ... {overflow} more
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SelectedProjectsModal({
+  projects,
+  onRemove,
+  onClose,
+}: {
+  projects: SelectedProject[];
+  onRemove: (id: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 overflow-hidden max-h-[80vh] flex flex-col"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FolderKanban className="w-4 h-4 text-gray-400" />
+            <h3 className="text-[15px] font-semibold text-gray-900">
+              Selected Projects ({projects.length})
+            </h3>
+          </div>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+            <X className="w-4 h-4 text-gray-400" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
+          {projects.length === 0 ? (
+            <div className="text-center py-8 text-gray-400 text-sm">No projects selected</div>
+          ) : (
+            <div className="space-y-1.5">
+              {projects.map((proj) => {
+                const badge = STATE_BADGES[proj.state] || STATE_BADGES.planning;
+                return (
+                  <div
+                    key={proj.sys_id}
+                    className="flex items-center gap-3 p-2.5 rounded-lg border border-gray-200 bg-white"
+                  >
+                    <div
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: proj.color || '#94a3b8' }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-mono text-gray-400">{proj.number}</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${badge.className}`}>
+                          {badge.label}
+                        </span>
+                      </div>
+                      <div className="text-sm font-medium text-gray-800 truncate">
+                        {proj.short_description}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onRemove(proj.sys_id)}
+                      className="p-1 hover:bg-red-100 rounded-lg transition-colors"
+                      aria-label={`Remove ${proj.short_description}`}
+                    >
+                      <X className="w-3.5 h-3.5 text-red-500" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        <div className="px-6 py-3 border-t border-gray-200 bg-gray-50 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-5 py-2 bg-[#1A56DB] text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+          >
+            Done
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

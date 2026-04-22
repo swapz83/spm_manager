@@ -17,6 +17,16 @@ export function usePeople(managerId?: string, startDate?: string, endDate?: stri
 export function useManagers() {
   return useQuery({
     queryKey: ['managers'],
-    queryFn: () => api.managers.list(),
+    queryFn: async () => {
+      const managers = await api.managers.list();
+      return [...(managers || [])].sort((a: any, b: any) => {
+        const af = (a.first_name || '').toLowerCase();
+        const bf = (b.first_name || '').toLowerCase();
+        if (af !== bf) return af < bf ? -1 : 1;
+        const al = (a.last_name || '').toLowerCase();
+        const bl = (b.last_name || '').toLowerCase();
+        return al < bl ? -1 : al > bl ? 1 : 0;
+      });
+    },
   });
 }

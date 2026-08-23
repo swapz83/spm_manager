@@ -1,8 +1,9 @@
 'use client';
+import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { cn } from '@/lib/utils';
 import { X, Users, Calendar } from 'lucide-react';
-import { useDeleteAssignment } from '@/hooks/useAssignments';
+import { useDeleteAssignment, useUpdateAssignment } from '@/hooks/useAssignments';
 
 function formatDate(d: string | null | undefined): string {
   if (!d) return '—';
@@ -14,16 +15,41 @@ function formatDate(d: string | null | undefined): string {
 interface ProjectCardProps {
   project: any;
   onRemovePending?: (id: string) => void;
+  onEditPending?: (id: string, allocation_pct: number) => void;
 }
 
-export function ProjectCard({ project, onRemovePending }: ProjectCardProps) {
+export function ProjectCard({ project, onRemovePending, onEditPending }: ProjectCardProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `project-${project.sys_id}`,
     data: { type: 'project', project },
   });
 
   const deleteAssignment = useDeleteAssignment();
+  const updateAssignment = useUpdateAssignment();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
   const assignments = project.assignments || [];
+
+  function startEdit(a: any) {
+    setEditingId(a.sys_id);
+    setEditValue(String(a.allocation_pct));
+  }
+
+  function commitEdit(a: any) {
+    const val = parseInt(editValue, 10);
+    if (!isNaN(val) && val >= 1 && val <= 100 && val !== a.allocation_pct) {
+      if (a.isPending || a.resource_status === 'pending') {
+        onEditPending?.(a.sys_id, val);
+      } else {
+        updateAssignment.mutate({ id: a.sys_id, allocation_pct: val });
+      }
+    }
+    setEditingId(null);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+  }
 
   return (
     <div
@@ -107,15 +133,35 @@ export function ProjectCard({ project, onRemovePending }: ProjectCardProps) {
                       {isPending && <span className="ml-1 text-[10px] text-blue-500">(new)</span>}
                     </span>
                   </div>
-                  {/* Allocation — fixed-width pill so values align in a column */}
-                  <span className={cn(
-                    'text-xs font-semibold text-center px-1.5 py-0.5 rounded-md border w-14 mx-auto tabular-nums',
-                    isPending
-                      ? 'text-blue-600 bg-blue-100 border-blue-200'
-                      : 'text-slate-600 bg-white border-slate-200'
-                  )}>
-                    {a.allocation_pct}%
-                  </span>
+                  {/* Allocation — click to edit in-place */}
+                  {editingId === a.sys_id ? (
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={editValue}
+                      autoFocus
+                      onChange={e => setEditValue(e.target.value)}
+                      onBlur={() => commitEdit(a)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') { e.preventDefault(); commitEdit(a); }
+                        if (e.key === 'Escape') cancelEdit();
+                      }}
+                      className="w-14 mx-auto text-xs font-semibold text-center px-1 py-0.5 rounded-md border border-blue-400 outline-none bg-white tabular-nums"
+                    />
+                  ) : (
+                    <span
+                      onClick={() => startEdit(a)}
+                      title="Click to edit"
+                      className={cn(
+                        'text-xs font-semibold text-center px-1.5 py-0.5 rounded-md border w-14 mx-auto tabular-nums cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors',
+                        isPending
+                          ? 'text-blue-600 bg-blue-100 border-blue-200'
+                          : 'text-slate-600 bg-white border-slate-200'
+                      )}>
+                      {a.allocation_pct}%
+                    </span>
+                  )}
                   {/* Start */}
                   <span className="text-[11px] text-slate-500 text-center whitespace-nowrap tabular-nums">
                     {formatDate(a.start_date)}
@@ -133,9 +179,10 @@ export function ProjectCard({ project, onRemovePending }: ProjectCardProps) {
                         deleteAssignment.mutate(a.sys_id);
                       }
                     }}
-                    className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-red-100 rounded transition-all justify-self-end"
+                    title="Remove assignment"
+                    className="p-0.5 rounded transition-all justify-self-end text-slate-300 hover:text-red-500 hover:bg-red-100"
                   >
-                    <X className="w-3 h-3 text-red-500" />
+                    <X className="w-3 h-3" />
                   </button>
                 </div>
               );

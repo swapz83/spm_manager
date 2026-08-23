@@ -263,6 +263,10 @@ export function ManageView() {
     setPendingChanges(prev => prev.filter(c => c.id !== id));
   }, []);
 
+  const editPendingChange = useCallback((id: string, allocation_pct: number) => {
+    setPendingChanges(prev => prev.map(c => c.id === id ? { ...c, allocation_pct } : c));
+  }, []);
+
   // ── Review view ──
   if (showReview) {
     return (
@@ -390,7 +394,7 @@ export function ManageView() {
               </div>
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                 {projectsWithPending.map((project: any) => (
-                  <ProjectCard key={project.sys_id} project={project} onRemovePending={removePendingChange} />
+                  <ProjectCard key={project.sys_id} project={project} onRemovePending={removePendingChange} onEditPending={editPendingChange} />
                 ))}
               </div>
             </div>

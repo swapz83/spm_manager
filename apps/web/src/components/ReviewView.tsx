@@ -131,6 +131,8 @@ export function ReviewView({ changes, startDate, endDate, onBack, onRemoveChange
           project_id: c.project_id,
           project_name: c.project_name,
           new_allocation_pct: c.new_allocation_pct!,
+          start_date: c.start_date,
+          end_date: c.end_date,
         })),
         startDate,
         endDate,

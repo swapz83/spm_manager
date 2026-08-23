@@ -3,6 +3,61 @@ import { ServiceNowClient } from '../servicenow/client.js';
 import { getRuntimeConfig, isFullyConfigured } from '../servicenow/runtimeConfig.js';
 
 /**
+ * Build per-month FTE breakdown fields for the `task` object in updateTopGridData.
+ * Returns an object that can be spread directly into the task body.
+ */
+function buildMonthlyBreakdownsForTask(
+  startDate: string,
+  endDate: string,
+  allocationPct: number,
+  asmtId: string,
+): Record<string, any> {
+  const fields: Record<string, any> = {};
+  if (!startDate || !endDate) return fields;
+
+  const fteFraction = allocationPct / 100;
+  const start = new Date(startDate + 'T00:00:00Z');
+  const end = new Date(endDate + 'T00:00:00Z');
+  if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) return fields;
+
+  const cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1));
+  const finalMonth = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1));
+
+  while (cursor <= finalMonth) {
+    const year = cursor.getUTCFullYear();
+    const month = cursor.getUTCMonth();
+    const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+
+    let workdays = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const day = new Date(Date.UTC(year, month, d));
+      if (day < start || day > end) continue;
+      const dow = day.getUTCDay();
+      if (dow !== 0 && dow !== 6) workdays++;
+    }
+
+    const monthKey = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+    fields[`${monthKey}#planned`] = {
+      value: fteFraction,
+      displayValue: String(fteFraction),
+      asmtOrResourcePlanId: asmtId,
+      hours: workdays * 8 * fteFraction,
+    };
+    fields[`${monthKey}#actuals`] = {
+      value: 0,
+      displayValue: 0,
+      asmtOrResourcePlanId: asmtId,
+      hours: 0,
+      isEditable: true,
+    };
+
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+
+  return fields;
+}
+
+/**
  * Build the `breakdowns` payload expected by the SN unassignResources API.
  *
  * Produces a JSON string mapping per-month keys to effort hours, e.g.:
@@ -92,6 +147,7 @@ export async function publishRoutes(fastify: FastifyInstance) {
       updates?: {
         original_sys_id: string; resource_id: string; resource_name: string;
         project_id: string; project_name: string; new_allocation_pct: number;
+        start_date: string; end_date: string;
       }[];
     };
 
@@ -323,30 +379,70 @@ export async function publishRoutes(fastify: FastifyInstance) {
     }
 
     // ── Process allocation updates ─────────────────────────────────────
+    // SN business rules reset resource_status to 'pending' whenever effort
+    // changes via the table API. A separate updateTopGridData call is needed
+    // to approve the record after the effort PATCH has settled.
     for (const u of updates || []) {
       try {
-        // Update local DB first
+        // Step 1: Update local DB
         await fastify.db.query(
           `UPDATE sn_plng_att_core_resource_assignment SET allocation_pct = $1, sys_updated_on = now() WHERE sys_id = $2`,
           [u.new_allocation_pct, u.original_sys_id]
         );
 
-        // Update ServiceNow
-        const resp = await sn.write({
+        // Step 2: PATCH effort in SN (this will leave the record in 'pending')
+        const fteFraction = u.new_allocation_pct / 100;
+        const patchResp = await sn.write({
           table: 'sn_plng_att_core_resource_assignment',
           sysId: u.original_sys_id,
           method: 'PATCH',
-          body: {
-            effort: u.new_allocation_pct / 100,
-            resource_status: 'approved',
-          },
+          body: { effort: fteFraction },
         });
 
-        if (!resp.ok) {
+        if (!patchResp.ok) {
           errors.push({
             user: u.resource_name,
             project: u.project_name,
-            error: `Failed to update allocation in ServiceNow: ${resp.status} ${resp.statusText}`,
+            error: `Failed to update allocation in ServiceNow: ${patchResp.status} ${patchResp.statusText}`,
+          });
+          continue;
+        }
+
+        // Step 3: Wait for SN business rules to finish, then approve via
+        // updateTopGridData (same endpoint the SN UI uses for approval)
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const monthlyBreakdowns = buildMonthlyBreakdownsForTask(
+          u.start_date, u.end_date, u.new_allocation_pct, u.original_sys_id
+        );
+
+        const approveResp = await sn.callApi({
+          path: '/api/sn_rm_ws/resource_management_workspace/updateTopGridData',
+          method: 'POST',
+          body: {
+            task: {
+              id: u.original_sys_id,
+              user_resource: { value: u.resource_id },
+              task: { value: u.project_id },
+              effort: { value: String(fteFraction) },
+              start_date: { value: u.start_date },
+              end_date: { value: u.end_date },
+              ...monthlyBreakdowns,
+            },
+            editValues: {
+              resource_status: { value: 'approved' },
+            },
+            timeSpan: 'month',
+            requestType: 'fte',
+            timeLineDates: { startDate: u.start_date, endDate: u.end_date },
+          },
+        });
+
+        if (!approveResp.ok) {
+          errors.push({
+            user: u.resource_name,
+            project: u.project_name,
+            error: `Effort updated but approval failed: ${approveResp.status} ${approveResp.statusText}`,
           });
           continue;
         }

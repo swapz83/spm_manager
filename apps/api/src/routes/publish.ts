@@ -72,7 +72,7 @@ function buildUnassignBreakdowns(
 export async function publishRoutes(fastify: FastifyInstance) {
 
   fastify.post('/api/v1/publish', async (req, reply) => {
-    const { changes, startDate, endDate, endEarly, unassign } = req.body as {
+    const { changes, startDate, endDate, endEarly, unassign, updates } = req.body as {
       changes: {
         resource_id: string;
         resource_email: string;
@@ -88,6 +88,10 @@ export async function publishRoutes(fastify: FastifyInstance) {
       unassign?: {
         original_sys_id: string; resource_id: string; resource_name: string;
         project_id: string; project_name: string;
+      }[];
+      updates?: {
+        original_sys_id: string; resource_id: string; resource_name: string;
+        project_id: string; project_name: string; new_allocation_pct: number;
       }[];
     };
 
@@ -315,6 +319,46 @@ export async function publishRoutes(fastify: FastifyInstance) {
         });
       } catch (e: any) {
         errors.push({ user: u.resource_name, project: u.project_name, error: `Unassign failed: ${e.message}` });
+      }
+    }
+
+    // ── Process allocation updates ─────────────────────────────────────
+    for (const u of updates || []) {
+      try {
+        // Update local DB first
+        await fastify.db.query(
+          `UPDATE sn_plng_att_core_resource_assignment SET allocation_pct = $1, sys_updated_on = now() WHERE sys_id = $2`,
+          [u.new_allocation_pct, u.original_sys_id]
+        );
+
+        // Update ServiceNow
+        const resp = await sn.write({
+          table: 'sn_plng_att_core_resource_assignment',
+          sysId: u.original_sys_id,
+          method: 'PATCH',
+          body: {
+            effort: u.new_allocation_pct / 100,
+            resource_status: 'approved',
+          },
+        });
+
+        if (!resp.ok) {
+          errors.push({
+            user: u.resource_name,
+            project: u.project_name,
+            error: `Failed to update allocation in ServiceNow: ${resp.status} ${resp.statusText}`,
+          });
+          continue;
+        }
+
+        results.push({
+          user: u.resource_name,
+          project: u.project_name,
+          allocation_pct: u.new_allocation_pct,
+          status: 'updated',
+        });
+      } catch (e: any) {
+        errors.push({ user: u.resource_name, project: u.project_name, error: `Allocation update failed: ${e.message}` });
       }
     }
 

@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { cn } from '@/lib/utils';
 import { X, Users, Calendar } from 'lucide-react';
-import { useDeleteAssignment, useUpdateAssignment } from '@/hooks/useAssignments';
 
 function formatDate(d: string | null | undefined): string {
   if (!d) return '—';
@@ -16,16 +15,16 @@ interface ProjectCardProps {
   project: any;
   onRemovePending?: (id: string) => void;
   onEditPending?: (id: string, allocation_pct: number) => void;
+  onDeleteExisting?: (assignment: any, project: any) => void;
+  onUpdateExisting?: (assignment: any, project: any, newPct: number) => void;
 }
 
-export function ProjectCard({ project, onRemovePending, onEditPending }: ProjectCardProps) {
+export function ProjectCard({ project, onRemovePending, onEditPending, onDeleteExisting, onUpdateExisting }: ProjectCardProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `project-${project.sys_id}`,
     data: { type: 'project', project },
   });
 
-  const deleteAssignment = useDeleteAssignment();
-  const updateAssignment = useUpdateAssignment();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const assignments = project.assignments || [];
@@ -41,7 +40,7 @@ export function ProjectCard({ project, onRemovePending, onEditPending }: Project
       if (a.isPending || a.resource_status === 'pending') {
         onEditPending?.(a.sys_id, val);
       } else {
-        updateAssignment.mutate({ id: a.sys_id, allocation_pct: val });
+        onUpdateExisting?.(a, project, val);
       }
     }
     setEditingId(null);
@@ -176,7 +175,7 @@ export function ProjectCard({ project, onRemovePending, onEditPending }: Project
                       if (isPending && onRemovePending) {
                         onRemovePending(a.sys_id);
                       } else if (!isPending) {
-                        deleteAssignment.mutate(a.sys_id);
+                        onDeleteExisting?.(a, project);
                       }
                     }}
                     title="Remove assignment"

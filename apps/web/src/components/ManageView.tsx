@@ -29,11 +29,13 @@ export interface PendingChange {
   allocation_pct: number;
   start_date: string;
   end_date: string;
-  type: 'add' | 'end_early' | 'unassign';
-  /** For end_early / unassign: the original assignment sys_id being terminated or removed */
+  type: 'add' | 'end_early' | 'unassign' | 'update';
+  /** For end_early / unassign / update: the original assignment sys_id */
   original_sys_id?: string;
   /** For end_early: the new end date being set */
   new_end_date?: string;
+  /** For update: the new allocation percentage */
+  new_allocation_pct?: number;
 }
 
 function getDefaultStartDate(): string {
@@ -112,8 +114,14 @@ export function ManageView() {
 
   // ── Merge pending changes into data ──
   const projectsWithPending = useMemo(() => {
+    const stagedUnassignIds = new Set(
+      pendingChanges.filter(c => c.type === 'unassign' && c.original_sys_id).map(c => c.original_sys_id!)
+    );
+    const stagedUpdateMap = new Map(
+      pendingChanges.filter(c => c.type === 'update' && c.original_sys_id).map(c => [c.original_sys_id!, c.new_allocation_pct!])
+    );
     return allProjects.map((p: any) => {
-      const pending = pendingChanges
+      const pendingAdds = pendingChanges
         .filter(c => c.project_id === p.sys_id && c.type === 'add')
         .map(c => ({
           sys_id: c.id,
@@ -126,7 +134,13 @@ export function ManageView() {
           resource_status: 'pending',
           isPending: true,
         }));
-      return { ...p, assignments: [...(p.assignments || []), ...pending] };
+      const filteredAssignments = (p.assignments || [])
+        .filter((a: any) => !stagedUnassignIds.has(a.sys_id))
+        .map((a: any) => stagedUpdateMap.has(a.sys_id)
+          ? { ...a, allocation_pct: stagedUpdateMap.get(a.sys_id) }
+          : a
+        );
+      return { ...p, assignments: [...filteredAssignments, ...pendingAdds] };
     });
   }, [allProjects, pendingChanges]);
 
@@ -267,6 +281,54 @@ export function ManageView() {
     setPendingChanges(prev => prev.map(c => c.id === id ? { ...c, allocation_pct } : c));
   }, []);
 
+  const stageDeleteExisting = useCallback((assignment: any, project: any) => {
+    setPendingChanges(prev => {
+      if (prev.some(c => c.type === 'unassign' && c.original_sys_id === assignment.sys_id)) return prev;
+      return [...prev, {
+        id: `unassign-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        resource_id: assignment.resource,
+        resource_email: '',
+        resource_name: assignment.resource_name,
+        project_id: project.sys_id,
+        project_number: project.number,
+        project_name: project.short_description,
+        project_color: project.color || '#94a3b8',
+        allocation_pct: assignment.allocation_pct,
+        start_date: assignment.start_date || '',
+        end_date: assignment.end_date || '',
+        type: 'unassign',
+        original_sys_id: assignment.sys_id,
+      }];
+    });
+  }, []);
+
+  const stageUpdateExisting = useCallback((assignment: any, project: any, newPct: number) => {
+    setPendingChanges(prev => {
+      const existingIdx = prev.findIndex(c => c.type === 'update' && c.original_sys_id === assignment.sys_id);
+      if (existingIdx >= 0) {
+        const next = [...prev];
+        next[existingIdx] = { ...next[existingIdx], new_allocation_pct: newPct };
+        return next;
+      }
+      return [...prev, {
+        id: `update-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        resource_id: assignment.resource,
+        resource_email: '',
+        resource_name: assignment.resource_name,
+        project_id: project.sys_id,
+        project_number: project.number,
+        project_name: project.short_description,
+        project_color: project.color || '#94a3b8',
+        allocation_pct: assignment.allocation_pct,
+        start_date: assignment.start_date || '',
+        end_date: assignment.end_date || '',
+        type: 'update',
+        original_sys_id: assignment.sys_id,
+        new_allocation_pct: newPct,
+      }];
+    });
+  }, []);
+
   // ── Review view ──
   if (showReview) {
     return (
@@ -285,6 +347,7 @@ export function ManageView() {
   const addCount = pendingChanges.filter(c => c.type === 'add').length;
   const endEarlyCount = pendingChanges.filter(c => c.type === 'end_early').length;
   const unassignCount = pendingChanges.filter(c => c.type === 'unassign').length;
+  const updateCount = pendingChanges.filter(c => c.type === 'update').length;
   const totalPending = pendingChanges.length;
 
   return (
@@ -352,6 +415,7 @@ export function ManageView() {
                   <span className="font-bold text-blue-600">{addCount}</span> add
                   {endEarlyCount > 0 && <>, <span className="font-bold text-amber-600">{endEarlyCount}</span> end</>}
                   {unassignCount > 0 && <>, <span className="font-bold text-red-600">{unassignCount}</span> remove</>}
+                  {updateCount > 0 && <>, <span className="font-bold text-purple-600">{updateCount}</span> update</>}
                 </div>
                 <button onClick={() => setShowReview(true)}
                   className="flex items-center gap-2 px-4 py-1.5 bg-[#1A56DB] text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm">
@@ -394,7 +458,14 @@ export function ManageView() {
               </div>
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                 {projectsWithPending.map((project: any) => (
-                  <ProjectCard key={project.sys_id} project={project} onRemovePending={removePendingChange} onEditPending={editPendingChange} />
+                  <ProjectCard
+                    key={project.sys_id}
+                    project={project}
+                    onRemovePending={removePendingChange}
+                    onEditPending={editPendingChange}
+                    onDeleteExisting={stageDeleteExisting}
+                    onUpdateExisting={stageUpdateExisting}
+                  />
                 ))}
               </div>
             </div>

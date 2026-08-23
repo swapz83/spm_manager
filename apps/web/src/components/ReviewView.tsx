@@ -1,6 +1,7 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { ArrowLeft, Send, X, CheckCircle, AlertCircle, Loader2, Calendar, Plus, CalendarX2, Trash2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Send, X, CheckCircle, AlertCircle, Loader2, Calendar, Plus, CalendarX2, Trash2, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import type { PendingChange } from '@/components/ManageView';
@@ -24,10 +25,12 @@ interface ReviewViewProps {
 export function ReviewView({ changes, startDate, endDate, onBack, onRemoveChange, onPublished }: ReviewViewProps) {
   const [publishing, setPublishing] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const queryClient = useQueryClient();
 
   const addChanges = useMemo(() => changes.filter(c => c.type === 'add'), [changes]);
   const endEarlyChanges = useMemo(() => changes.filter(c => c.type === 'end_early'), [changes]);
   const unassignChanges = useMemo(() => changes.filter(c => c.type === 'unassign'), [changes]);
+  const updateChanges = useMemo(() => changes.filter(c => c.type === 'update'), [changes]);
 
   // Group ADD changes by person
   const groupedByPerson = useMemo(() => {
@@ -77,6 +80,18 @@ export function ReviewView({ changes, startDate, endDate, onBack, onRemoveChange
     return Array.from(map.values());
   }, [unassignChanges]);
 
+  // Group UPDATE changes by person
+  const updatesByPerson = useMemo(() => {
+    const map = new Map<string, { name: string; resource_id: string; changes: PendingChange[] }>();
+    for (const c of updateChanges) {
+      if (!map.has(c.resource_id)) {
+        map.set(c.resource_id, { name: c.resource_name, resource_id: c.resource_id, changes: [] });
+      }
+      map.get(c.resource_id)!.changes.push(c);
+    }
+    return Array.from(map.values());
+  }, [updateChanges]);
+
   const handlePublish = async () => {
     setPublishing(true);
     try {
@@ -109,11 +124,25 @@ export function ReviewView({ changes, startDate, endDate, onBack, onRemoveChange
           project_id: c.project_id,
           project_name: c.project_name,
         })),
+        updates: updateChanges.map(c => ({
+          original_sys_id: c.original_sys_id!,
+          resource_id: c.resource_id,
+          resource_name: c.resource_name,
+          project_id: c.project_id,
+          project_name: c.project_name,
+          new_allocation_pct: c.new_allocation_pct!,
+        })),
         startDate,
         endDate,
       };
       const res = await api.publish.execute(payload);
       setResult(res);
+      // The publish route already wrote all changes to the local DB — invalidate
+      // the React Query caches so the board refetches and reflects the new state.
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['people'] });
+      queryClient.invalidateQueries({ queryKey: ['assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
     } catch (e: any) {
       setResult({ success: false, errors: [{ error: e.message }], published: [] });
     } finally {
@@ -203,6 +232,11 @@ export function ReviewView({ changes, startDate, endDate, onBack, onRemoveChange
               {unassignChanges.length > 0 && (
                 <span className="text-red-600">
                   {' '}· {unassignChanges.length} unassign{unassignChanges.length !== 1 ? 's' : ''}
+                </span>
+              )}
+              {updateChanges.length > 0 && (
+                <span className="text-purple-600">
+                  {' '}· {updateChanges.length} allocation update{updateChanges.length !== 1 ? 's' : ''}
                 </span>
               )}
             </p>
@@ -382,6 +416,54 @@ export function ReviewView({ changes, startDate, endDate, onBack, onRemoveChange
                         {formatDate(c.start_date)}–{formatDate(c.end_date)}
                       </span>
                       <span className="ml-auto text-xs font-semibold text-red-600">Remove</span>
+                      <button
+                        onClick={() => onRemoveChange(c.id)}
+                        className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-red-100 rounded transition-all"
+                      >
+                        <X className="w-3 h-3 text-red-400" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Allocation Updates ── */}
+      {updateChanges.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(17,24,39,0.06),0_2px_8px_rgba(17,24,39,0.04)] border border-purple-100 p-6 mb-5">
+          <h3 className="flex items-center gap-2 text-[13px] font-semibold text-gray-900 mb-1">
+            <Pencil className="w-4 h-4 text-purple-500" />
+            Allocation Updates
+          </h3>
+          <p className="text-xs text-gray-500 mb-4">
+            These existing assignments will have their allocation percentage updated.
+          </p>
+          <div className="space-y-3">
+            {updatesByPerson.map((group) => (
+              <div key={group.resource_id} className="border border-purple-100 rounded-xl p-4 bg-purple-50/40">
+                <div className="flex items-center gap-3 mb-3">
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold"
+                    style={{ backgroundColor: stringToColor(group.name) }}
+                  >
+                    {group.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                  </div>
+                  <div className="font-medium text-gray-900 text-sm">{group.name}</div>
+                </div>
+                <div className="space-y-2 pl-10">
+                  {group.changes.map(c => (
+                    <div key={c.id} className="flex items-center gap-3 text-sm group">
+                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.project_color }} />
+                      <span className="text-gray-700">{c.project_name}</span>
+                      <span className="text-xs text-gray-400 font-mono">{c.project_number}</span>
+                      <span className="text-xs text-gray-500 ml-auto flex items-center gap-1.5">
+                        <span className="font-semibold text-gray-500">{c.allocation_pct}%</span>
+                        <span className="text-gray-400">&rarr;</span>
+                        <span className="font-semibold text-purple-700">{c.new_allocation_pct}%</span>
+                      </span>
                       <button
                         onClick={() => onRemoveChange(c.id)}
                         className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-red-100 rounded transition-all"

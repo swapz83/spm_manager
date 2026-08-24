@@ -114,8 +114,11 @@ export function ManageView() {
 
   // ── Merge pending changes into data ──
   const projectsWithPending = useMemo(() => {
+    // Hide rows that are staged for full removal OR for end-dating before the filter window
     const stagedUnassignIds = new Set(
-      pendingChanges.filter(c => c.type === 'unassign' && c.original_sys_id).map(c => c.original_sys_id!)
+      pendingChanges
+        .filter(c => (c.type === 'unassign' || c.type === 'end_early') && c.original_sys_id)
+        .map(c => c.original_sys_id!)
     );
     const stagedUpdateMap = new Map(
       pendingChanges.filter(c => c.type === 'update' && c.original_sys_id).map(c => [c.original_sys_id!, c.new_allocation_pct!])
@@ -283,9 +286,10 @@ export function ManageView() {
 
   const stageDeleteExisting = useCallback((assignment: any, project: any) => {
     setPendingChanges(prev => {
-      if (prev.some(c => c.type === 'unassign' && c.original_sys_id === assignment.sys_id)) return prev;
-      return [...prev, {
-        id: `unassign-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      // Prevent duplicates regardless of which type we'll create
+      if (prev.some(c => (c.type === 'unassign' || c.type === 'end_early') && c.original_sys_id === assignment.sys_id)) return prev;
+
+      const base = {
         resource_id: assignment.resource,
         resource_email: '',
         resource_name: assignment.resource_name,
@@ -296,11 +300,33 @@ export function ManageView() {
         allocation_pct: assignment.allocation_pct,
         start_date: assignment.start_date || '',
         end_date: assignment.end_date || '',
-        type: 'unassign',
         original_sys_id: assignment.sys_id,
+      };
+
+      const aStart = assignment.start_date ? new Date(assignment.start_date) : null;
+      const filterStart = appliedStartDate ? new Date(appliedStartDate) : null;
+
+      if (aStart && filterStart && aStart < filterStart) {
+        // Assignment predates the filter window — end-date it the day before
+        // the filter starts rather than fully removing it
+        const dayBefore = new Date(filterStart);
+        dayBefore.setDate(dayBefore.getDate() - 1);
+        const newEndDate = dayBefore.toISOString().split('T')[0];
+        return [...prev, {
+          ...base,
+          id: `end-early-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          type: 'end_early',
+          new_end_date: newEndDate,
+        }];
+      }
+
+      return [...prev, {
+        ...base,
+        id: `unassign-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        type: 'unassign',
       }];
     });
-  }, []);
+  }, [appliedStartDate]);
 
   const stageUpdateExisting = useCallback((assignment: any, project: any, newPct: number) => {
     setPendingChanges(prev => {

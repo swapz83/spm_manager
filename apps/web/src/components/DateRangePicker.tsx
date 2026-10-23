@@ -30,7 +30,7 @@ function buildPresets(): Preset[] {
   const y = today.getFullYear();
   const m = today.getMonth() + 1;
   const todayISO = toISO(today);
-  return [
+  const presets: Preset[] = [
     { label: 'This month',   start: `${y}-${pad(m)}-01`,  end: `${y}-${pad(m)}-${endOfMonthDay(y, m)}` },
     { label: `Q1 ${y}`,      start: `${y}-01-01`,          end: `${y}-03-31` },
     { label: `Q2 ${y}`,      start: `${y}-04-01`,          end: `${y}-06-30` },
@@ -41,6 +41,16 @@ function buildPresets(): Preset[] {
     { label: `FY ${y}`,      start: `${y}-01-01`,          end: `${y}-12-31` },
     { label: 'Rest of year', start: todayISO,               end: `${y}-12-31` },
   ];
+  // From September onward, surface next-year windows so users can quickly
+  // filter for future allocations without hand-picking dates.
+  if (m >= 9) {
+    const ny = y + 1;
+    presets.push(
+      { label: `H1 ${ny}`,     start: `${ny}-01-01`, end: `${ny}-06-30` },
+      { label: `Entire ${ny}`, start: `${ny}-01-01`, end: `${ny}-12-31` },
+    );
+  }
+  return presets;
 }
 
 /* ─── calendar grid ─── */

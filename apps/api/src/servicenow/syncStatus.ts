@@ -13,6 +13,8 @@ export interface SyncStatus {
   step: string;
   /** Error message when state === 'error' */
   error?: string;
+  /** ISO timestamp set when the sync reaches a terminal state (done / error) */
+  completedAt?: string;
 }
 
 let _status: SyncStatus = { state: 'idle', progress: 0, step: '' };
@@ -23,6 +25,15 @@ export function getSyncStatus(): SyncStatus {
 
 export function setSyncStatus(partial: Partial<SyncStatus>) {
   _status = { ..._status, ...partial };
+  // Stamp completion time whenever we transition into a terminal state,
+  // unless the caller supplied one explicitly.
+  if ((partial.state === 'done' || partial.state === 'error') && partial.completedAt === undefined) {
+    _status.completedAt = new Date().toISOString();
+  }
+  // A fresh sync run clears any previous completion timestamp.
+  if (partial.state === 'syncing' && partial.completedAt === undefined) {
+    _status.completedAt = undefined;
+  }
 }
 
 export function resetSyncStatus() {

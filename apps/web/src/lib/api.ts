@@ -71,6 +71,7 @@ export const api = {
       progress: number;
       step: string;
       error?: string;
+      completedAt?: string;
     }>('/sync/status'),
   },
   config: {

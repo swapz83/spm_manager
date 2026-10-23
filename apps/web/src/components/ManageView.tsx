@@ -38,15 +38,6 @@ export interface PendingChange {
   new_allocation_pct?: number;
 }
 
-function getDefaultStartDate(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-}
-
-function getDefaultEndDate(): string {
-  return `${new Date().getFullYear()}-12-31`;
-}
-
 export function ManageView() {
   // ── Shared filter state (persists across tabs) ──
   const { applied, draft, setDraft, apply, applyWith, changed } = useFilters();
@@ -152,6 +143,13 @@ export function ManageView() {
         p.title?.toLowerCase().includes(searchQuery.toLowerCase());
     });
   }, [people, searchQuery]);
+
+  const allFilteredSelected = filteredPeople.length > 0 &&
+    filteredPeople.every((p: any) => selectedPeople.has(p.sys_id));
+
+  const selectAllFiltered = useCallback(() => {
+    setSelectedPeople(new Set(filteredPeople.map((p: any) => p.sys_id)));
+  }, [filteredPeople]);
 
   // ── Drag-and-drop ──
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -478,13 +476,22 @@ export function ManageView() {
                   <h2 className="text-[15px] font-semibold text-gray-900">
                     People <span className="text-sm font-normal text-gray-400">({filteredPeople.length})</span>
                   </h2>
-                  {selectedPeople.size > 0 && (
-                    <button onClick={clearSelection}
-                      className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                      <XCircle className="w-3.5 h-3.5" />
-                      Clear ({selectedPeople.size})
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {filteredPeople.length > 0 && (
+                      <button
+                        onClick={allFilteredSelected ? clearSelection : selectAllFiltered}
+                        className="text-xs font-semibold text-[#1A56DB] hover:text-blue-700 transition-colors">
+                        {allFilteredSelected ? 'Deselect All' : 'Select All'}
+                      </button>
+                    )}
+                    {selectedPeople.size > 0 && (
+                      <button onClick={clearSelection}
+                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                        <XCircle className="w-3.5 h-3.5" />
+                        Clear ({selectedPeople.size})
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Selection banner */}
@@ -526,8 +533,8 @@ export function ManageView() {
         <AllocationDialog
           people={pendingDrop.people}
           project={pendingDrop.project}
-          defaultStartDate={getDefaultStartDate()}
-          defaultEndDate={getDefaultEndDate()}
+          defaultStartDate={appliedStartDate}
+          defaultEndDate={appliedEndDate}
           onConfirm={handleConfirmAllocation}
           onCancel={() => setPendingDrop(null)}
         />

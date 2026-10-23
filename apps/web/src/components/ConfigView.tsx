@@ -21,6 +21,15 @@ export function ConfigView() {
     refetchInterval: false,
   });
 
+  // Poll sync progress so Settings shows a clear completion signal. Polls
+  // every second while syncing, then stops once the sync reaches a terminal
+  // state. Shares its cache key with the global SyncBar.
+  const { data: sync } = useQuery({
+    queryKey: ['sync-status'],
+    queryFn: () => api.sync.status(),
+    refetchInterval: (query) => (query.state.data?.state === 'syncing' ? 1000 : false),
+  });
+
   // Convenience default for Instance URL so users don't re-type it.
   // Email is offered via the quick-pick badges below the input instead.
   // Any server-returned value overrides these in the useEffect below.
@@ -201,6 +210,9 @@ export function ConfigView() {
               </div>
             )}
           </div>
+
+          {/* ── Data sync card ── */}
+          <SyncStatusCard sync={sync} />
         </div>
 
         {/* ── Credentials form ── */}
@@ -379,6 +391,95 @@ export function ConfigView() {
         </div>
 
       </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Data sync status — polls sync progress and shows a clear
+   completion signal so users know when data is ready to view.
+   ═══════════════════════════════════════════════════════════════ */
+interface SyncState {
+  state: 'idle' | 'syncing' | 'done' | 'error';
+  progress: number;
+  step: string;
+  error?: string;
+  completedAt?: string;
+}
+
+function formatSyncTime(iso?: string): string {
+  if (!iso) return '';
+  try {
+    return new Date(iso).toLocaleString('en-US', {
+      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+    });
+  } catch { return ''; }
+}
+
+function SyncStatusCard({ sync }: { sync?: SyncState }) {
+  // Nothing has happened yet this session — keep the panel quiet.
+  if (!sync || sync.state === 'idle') return null;
+
+  const isSyncing = sync.state === 'syncing';
+  const isDone    = sync.state === 'done';
+  const isError   = sync.state === 'error';
+
+  return (
+    <div className="bg-white rounded-xl shadow-[0_1px_3px_rgba(17,24,39,0.06),0_2px_8px_rgba(17,24,39,0.04)] border border-gray-100 p-5 mt-6">
+      <div className="text-[10px] font-bold tracking-[0.08em] uppercase text-gray-400 mb-4">
+        Data Sync
+      </div>
+
+      <div className={cn(
+        'flex items-center gap-3 px-4 py-3 rounded-lg border',
+        isSyncing ? 'bg-blue-50 border-blue-200'
+          : isDone ? 'bg-emerald-50 border-emerald-200'
+          : 'bg-red-50 border-red-200',
+      )}>
+        {isSyncing && <Loader2 className="w-5 h-5 text-blue-600 flex-shrink-0 animate-spin" />}
+        {isDone    && <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />}
+        {isError   && <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />}
+        <div className="min-w-0">
+          <div className={cn('text-[13px] font-semibold',
+            isSyncing ? 'text-blue-700' : isDone ? 'text-emerald-700' : 'text-red-700',
+          )}>
+            {isSyncing ? 'Syncing from ServiceNow…'
+              : isDone ? 'Sync complete — data ready'
+              : 'Sync failed'}
+          </div>
+          {(isDone || isError) && sync.completedAt && (
+            <div className="text-[11px] text-gray-400 mt-0.5">
+              {isDone ? 'Completed' : 'Failed'} {formatSyncTime(sync.completedAt)}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Progress bar while syncing */}
+      {isSyncing && (
+        <div className="mt-3">
+          <div className="h-1.5 bg-blue-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-blue-500 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${sync.progress}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between mt-1.5">
+            <span className="text-[11px] text-gray-500 truncate">{sync.step}</span>
+            <span className="text-[11px] font-semibold text-blue-600 tabular-nums flex-shrink-0">{sync.progress}%</span>
+          </div>
+        </div>
+      )}
+
+      {/* Summary line on success (record counts come through in `step`) */}
+      {isDone && sync.step && (
+        <p className="text-[12px] text-gray-500 mt-3">{sync.step}</p>
+      )}
+
+      {/* Error detail */}
+      {isError && sync.error && (
+        <p className="text-[12px] text-red-500 mt-3 break-words">{sync.error}</p>
+      )}
     </div>
   );
 }
